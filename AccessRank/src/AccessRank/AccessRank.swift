@@ -36,7 +36,9 @@ class AccessRank {
     
     var predictionList = ScoredItem[]()
     var predictions: String[] {
-        return predictionList.map { $0.id }
+        return predictionList.map { $0.id }.filter { [unowned self] item in
+           item != self.mostRecentItem
+        }
     }
     
     init(listStability: ListStability = .Medium, initialItem: String = "<Initial>") {
@@ -55,16 +57,16 @@ class AccessRank {
     }
     
     func updatePredictionList()  {
-        if !predictionsListContainsItem(mostRecentItem) {
-            predictionList += ScoredItem(id: mostRecentItem, score: 0.0)
-        }
-        
         for (index, scoredItem) in enumerate(predictionList) {
             predictionList[index] = ScoredItem(id: scoredItem.id, score: scoreForItem(scoredItem.id))
         }
         
         predictionList.sort { [unowned self] A, B in
             return A.score > (B.score + self.listStabilityValue.d)
+        }
+        
+        if !predictionsListContainsItem(mostRecentItem) {
+            predictionList += ScoredItem(id: mostRecentItem, score: 0.0)
         }
     }
     
@@ -202,9 +204,17 @@ class AccessRank {
     
     func markovDescription() -> String {
         var str = ""
-        for (itemID, itemOccurrences) in items {
+        for (item, itemOccurrences) in items {
             let nextItemsStr = join(", ", itemOccurrences.map { $0.id })
-            str += "\(itemID) > \(nextItemsStr)\n"
+            str += "\(item) > \(nextItemsStr)\n"
+        }
+        return str
+    }
+    
+    func scoreDescription() -> String {
+        var str = ""
+        for (_, scoredItem) in enumerate(predictionList) {
+            str += "\(scoredItem.id): score: \(scoredItem.score), markov: \(markovWeightForItem(scoredItem.id)), crf: \(combinedRecencyFrequencyWeightForItem(scoredItem.id)), time: \(timeWeightForItem(scoredItem.id))\n"
         }
         return str
     }

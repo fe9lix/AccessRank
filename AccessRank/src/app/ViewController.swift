@@ -36,7 +36,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         if let code = Countries.all[indexPath.row]["code"] {
             accessRank.mostRecentItem = code
             println(accessRank.markovDescription())
-            println(accessRank.predictionListDescription())
+            println("scores: \n\(accessRank.scoreDescription())")
             updatePredictions()
         }
     }
