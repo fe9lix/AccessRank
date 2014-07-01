@@ -31,8 +31,8 @@ class AccessRank {
         }
     }
     
-    let initialItem: String
     var items = Dictionary<String, ItemOccurrence[]>()
+    let initialItemID = "<initial>"
     
     var predictionList = ScoredItem[]()
     var predictions: String[] {
@@ -41,20 +41,30 @@ class AccessRank {
         }
     }
     
-    init(listStability: ListStability = .Medium, initialItem: String = "<Initial>") {
+    init(listStability: ListStability = .Medium, data: Dictionary<String, AnyObject>? = nil) {
         self.listStability = listStability
-        self.initialItem = initialItem
-        self.mostRecentItem = initialItem
+        if (data) {
+            fromDictionary(data!)
+        }
     }
     
-    var mostRecentItem: String {
+    // Item updating
+    
+    var mostRecentItem: String? {
         didSet {
-            var nextItems = items[oldValue] ? items[oldValue]! : ItemOccurrence[]()
-            nextItems += ItemOccurrence(id: mostRecentItem, time: NSDate().timeIntervalSince1970)
-            items[oldValue] = nextItems
+            let previousItem = oldValue ? oldValue! : initialItemID
+            var nextItems = items[previousItem] ? items[previousItem]! : ItemOccurrence[]()
+            nextItems += ItemOccurrence(id: mostRecentItemID, time: NSDate().timeIntervalSince1970)
+            items[previousItem] = nextItems
             updatePredictionList()
         }
     }
+    
+    var mostRecentItemID: String {
+        return mostRecentItem ? mostRecentItem! : initialItemID
+    }
+    
+    // Prediction list
     
     func updatePredictionList()  {
         for (index, scoredItem) in enumerate(predictionList) {
@@ -65,8 +75,8 @@ class AccessRank {
             return A.score > (B.score + self.listStabilityValue.d)
         }
         
-        if !predictionsListContainsItem(mostRecentItem) {
-            predictionList += ScoredItem(id: mostRecentItem, score: 0.0)
+        if !predictionsListContainsItem(mostRecentItemID) {
+            predictionList += ScoredItem(id: mostRecentItemID, score: 0.0)
         }
     }
     
@@ -79,6 +89,8 @@ class AccessRank {
         return false
     }
     
+    // Combined score
+    
     func scoreForItem(item: String) -> Double {
         let a = 1.0 // adjust for different blend between Markov and CRF
         let wm = markovWeightForItem(item)
@@ -88,6 +100,8 @@ class AccessRank {
         return pow(wm, a) * pow(wcrf, 1 / a) * wt
     }
     
+    // Markov weight
+    
     func markovWeightForItem(item: String) -> Double {
         let xn = Double(numberOfOccurrencesForMostRecentItem())
         let x = Double(numberOfTransitionsFromMostRecentItemToItem(item))
@@ -96,17 +110,19 @@ class AccessRank {
     }
     
     func numberOfOccurrencesForMostRecentItem() -> Int {
-        return occurrencesForItem(mostRecentItem).count
+        return occurrencesForItem(mostRecentItemID).count
     }
     
     func numberOfTransitionsFromMostRecentItemToItem(item: String) -> Int {
-        if let nextItems = items[mostRecentItem] {
+        if let nextItems = items[mostRecentItemID] {
             return nextItems.reduce(0, { numTransitions, itemOccurrence in
                 return itemOccurrence.id == item ? numTransitions + 1 : numTransitions
             })
         }
         return 0
     }
+    
+    // CRF weight
     
     func combinedRecencyFrequencyWeightForItem(item: String) -> Double {
         let currentTime = NSDate().timeIntervalSince1970
@@ -117,6 +133,8 @@ class AccessRank {
             return weight + pow(1 / p, l * (currentTime - itemOccurrence.time))
         })
     }
+    
+    // Time weight
 
     func timeWeightForItem(item: String) -> Double {
         let h = hourOfDayRatioForItem(item)
@@ -180,6 +198,8 @@ class AccessRank {
         return Double(totalOccurrences) / 7
     }
     
+    // Helper methods
+    
     func numberOfOccurrencesForItem(item: String, atWeekday weekday: Int) -> Int {
         let calendar = NSCalendar.currentCalendar()
         
@@ -201,6 +221,48 @@ class AccessRank {
         }
         return occurrences
     }
+    
+    // Convenience methods for persisting and restoring the data structure
+    
+    func toDictionary() -> Dictionary<String, AnyObject> {
+        var itemsObj = Dictionary<String, Dictionary<String, AnyObject>[]>()
+        for (itemID, itemOccurrences) in items {
+            itemsObj[itemID] = itemOccurrences.map { ["id": $0.id, "time": $0.time] }
+        }
+        
+        let predictionsListObj = predictionList.map { ["id": $0.id, "score": $0.score] }
+        
+        return [
+            "mostRecentItem": mostRecentItemID,
+            "items": itemsObj,
+            "predictionList": predictionsListObj
+        ]
+    }
+    
+    func fromDictionary(dict: Dictionary<String, AnyObject>) {
+        mostRecentItem = dict["mostRecentItem"]! as? String
+        
+        if let itemsObj = dict["items"]! as? Dictionary<String, Dictionary<String, AnyObject>[]> {
+            items = Dictionary<String, ItemOccurrence[]>()
+            for (itemID, itemOccurrencesObj) in itemsObj {
+                items[itemID] = itemOccurrencesObj.map { itemOccurrenceObj in
+                    let id: AnyObject = itemOccurrenceObj["id"]!
+                    let time: AnyObject = itemOccurrenceObj["time"]!
+                    return ItemOccurrence(id: id as String, time: time as NSTimeInterval)
+                }
+            }
+        }
+        
+        if let predictionListObj = dict["predictionList"]! as? Dictionary<String, AnyObject>[] {
+            predictionList = predictionListObj.map { scoredItemObj in
+                let id: AnyObject = scoredItemObj["id"]!
+                let score: AnyObject = scoredItemObj["score"]!
+                return ScoredItem(id: id as String, score: score as Double)
+            }
+        }
+    }
+    
+    // Debugging methods
     
     func markovDescription() -> String {
         var str = ""

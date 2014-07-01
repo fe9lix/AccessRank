@@ -4,11 +4,18 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     @IBOutlet var tableView : UITableView
     @IBOutlet var predictionsTextView: UITextView
-    let countryCellIdentifier = "CountryCellIdentifier"
     
-    let accessRank: AccessRank = AccessRank(listStability: AccessRank.ListStability.Medium)
+    let countryCellIdentifier = "CountryCellIdentifier"
+    let accessRankuserDefaultsKey = "accessRank"
+    
+    var accessRank: AccessRank
     
     init(nibName nibNameOrNil: String!, bundle nibBundleOrNil: NSBundle!) {
+        let data: AnyObject? = NSUserDefaults.standardUserDefaults().objectForKey(accessRankuserDefaultsKey)
+        accessRank = AccessRank(
+            listStability: AccessRank.ListStability.Medium,
+            data: data as? Dictionary<String, AnyObject>)
+        
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
     }
     
@@ -16,7 +23,10 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         super.viewDidLoad()
 
         setupTableView()
+        updatePredictions()
     }
+    
+    // Table view
     
     func setupTableView() {
         tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: countryCellIdentifier)
@@ -35,15 +45,23 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     func tableView(tableView: UITableView!, didSelectRowAtIndexPath indexPath: NSIndexPath!) {
         if let code = Countries.all[indexPath.row]["code"] {
             accessRank.mostRecentItem = code
-            println(accessRank.markovDescription())
-            println("scores: \n\(accessRank.scoreDescription())")
             updatePredictions()
+            saveToUserDefaults()
         }
     }
+    
+    // Predictions
     
     func updatePredictions() {
         let predictedCountries: String[] = accessRank.predictions.map { Countries.byCode[$0]! }
         predictionsTextView.text = join("\n", predictedCountries)
+    }
+    
+    // Persistence
+    
+    func saveToUserDefaults() {
+        NSUserDefaults.standardUserDefaults().setObject(accessRank.toDictionary(), forKey: accessRankuserDefaultsKey)
+        NSUserDefaults.standardUserDefaults().synchronize()
     }
     
 }
