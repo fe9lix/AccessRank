@@ -3,7 +3,13 @@
 
 import Foundation
 
+protocol AccessRankDelegate {
+    func accessRankDidUpdatePredictions(accessRank: AccessRank)
+}
+
 class AccessRank {
+
+    var delegate: AccessRankDelegate?
     
     struct ItemOccurrence {
         var id: String
@@ -46,6 +52,7 @@ class AccessRank {
         self.listStability = listStability
         if (data) {
             fromDictionary(data!)
+            updatePredictionList()
         }
     }
     
@@ -118,6 +125,8 @@ class AccessRank {
         if mostRecentItemID != initialItemID && !predictionsListContainsItem(mostRecentItemID) {
             predictionList += ScoredItem(id: mostRecentItemID, score: 0.0)
         }
+        
+        delegate?.accessRankDidUpdatePredictions(self)
     }
     
     func predictionsListContainsItem(item: String) -> Bool {
@@ -316,8 +325,6 @@ class AccessRank {
     }
     
     func fromDictionary(dict: Dictionary<String, AnyObject>) {
-        mostRecentItem = dict["mostRecentItem"]! as? String
-        
         if let itemsObj = dict["items"]! as? Dictionary<String, Dictionary<String, AnyObject>[]> {
             items = Dictionary<String, ItemOccurrence[]>()
             for (itemID, itemOccurrencesObj) in itemsObj {
@@ -336,6 +343,8 @@ class AccessRank {
                 return ScoredItem(id: id as String, score: score as Double)
             }
         }
+        
+        mostRecentItem = dict["mostRecentItem"]! as? String
     }
     
     // Debugging methods

@@ -1,6 +1,6 @@
 import UIKit
 
-class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate {
+class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AccessRankDelegate {
     
     @IBOutlet var tableView : UITableView
     @IBOutlet var predictionsTextView: UITextView
@@ -17,13 +17,15 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
             data: data as? Dictionary<String, AnyObject>)
         
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+        
+        accessRank.delegate = self
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
 
         setupTableView()
-        updatePredictions()
+        updatePredictionList()
     }
     
     // Table view
@@ -45,14 +47,17 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     func tableView(tableView: UITableView!, didSelectRowAtIndexPath indexPath: NSIndexPath!) {
         if let code = Countries.all[indexPath.row]["code"] {
             accessRank.mostRecentItem = code
-            updatePredictions()
             saveToUserDefaults()
         }
     }
     
-    // Predictions
+    // AccessRankDelegate
     
-    func updatePredictions() {
+    func accessRankDidUpdatePredictions(accessRank: AccessRank) {
+        updatePredictionList()
+    }
+    
+    func updatePredictionList() {
         let predictedCountries: String[] = accessRank.predictions.map { Countries.byCode[$0]! }
         predictionsTextView.text = join("\n", predictedCountries)
     }
