@@ -30,9 +30,10 @@ class AccessRank {
             return (l: 2.50, d: 0.5)
         }
     }
+    var useTimeWeighting = true
     
     var items = Dictionary<String, ItemOccurrence[]>()
-    let initialItemID = "<initial>"
+    var initialItemID = "<initial>"
     
     var predictionList = ScoredItem[]()
     var predictions: String[] {
@@ -48,7 +49,7 @@ class AccessRank {
         }
     }
     
-    // Item updating
+    // Item updating and removal
     
     var mostRecentItem: String? {
         didSet {
@@ -64,6 +65,45 @@ class AccessRank {
         return mostRecentItem ? mostRecentItem! : initialItemID
     }
     
+    func removeItems(itemsToRemove: String[]) {
+        for item in itemsToRemove {
+            removeItem(item)
+        }
+        
+        if contains(itemsToRemove, mostRecentItemID) {
+            let oldMostRecentItem = mostRecentItemID
+            mostRecentItem = nil
+            items.removeValueForKey(oldMostRecentItem)
+        } else {
+            updatePredictionList()
+        }
+    }
+    
+    func removeItem(item: String) {
+        for (itemID, var itemOccurrences) in items {
+            if itemID == item {
+                items.removeValueForKey(itemID)
+            } else {
+                for (index, itemOccurrence) in enumerate(itemOccurrences) {
+                    if (itemOccurrence.id == item) {
+                        itemOccurrences.removeAtIndex(index)
+                    }
+                }
+                if itemOccurrences.isEmpty {
+                    items.removeValueForKey(itemID)
+                } else {
+                    items[itemID] = itemOccurrences
+                }
+            }
+        }
+        
+        for (index, scoredItem) in enumerate(predictionList) {
+            if (scoredItem.id == item) {
+                predictionList.removeAtIndex(index)
+            }
+        }
+    }
+    
     // Prediction list
     
     func updatePredictionList()  {
@@ -75,7 +115,7 @@ class AccessRank {
             return A.score > (B.score + self.listStabilityValue.d)
         }
         
-        if !predictionsListContainsItem(mostRecentItemID) {
+        if mostRecentItemID != initialItemID && !predictionsListContainsItem(mostRecentItemID) {
             predictionList += ScoredItem(id: mostRecentItemID, score: 0.0)
         }
     }
@@ -92,12 +132,12 @@ class AccessRank {
     // Combined score
     
     func scoreForItem(item: String) -> Double {
-        let a = 1.0 // adjust for different blend between Markov and CRF
+        let l = listStabilityValue.l
         let wm = markovWeightForItem(item)
         let wcrf = combinedRecencyFrequencyWeightForItem(item)
-        let wt = timeWeightForItem(item)
+        let wt = useTimeWeighting ? timeWeightForItem(item) : 1.0
         
-        return pow(wm, a) * pow(wcrf, 1 / a) * wt
+        return pow(wm, l) * pow(wcrf, 1 / l) * wt
     }
     
     // Markov weight
@@ -127,7 +167,7 @@ class AccessRank {
     func combinedRecencyFrequencyWeightForItem(item: String) -> Double {
         let currentTime = NSDate().timeIntervalSince1970
         let p = 2.0
-        let l = listStabilityValue.l
+        let l = 0.1
         
         return occurrencesForItem(item).reduce(0.0, { weight, itemOccurrence in
             return weight + pow(1 / p, l * (currentTime - itemOccurrence.time))
@@ -137,18 +177,33 @@ class AccessRank {
     // Time weight
 
     func timeWeightForItem(item: String) -> Double {
-        let h = hourOfDayRatioForItem(item)
-        let d = dayOfWeekRatioForItem(item)
+        let rh = hourOfDayRatioForItem(item)
+        let rd = dayOfWeekRatioForItem(item)
         
-        return pow(max(0.8, min(1.25, h * d)), 0.25)
+        return pow(max(0.8, min(1.25, rh * rd)), 0.25)
     }
     
+    // Time weight: Ratio for time of day
+    
     func hourOfDayRatioForItem(item: String) -> Double {
-        let numOfOccurrencesInCurrentHourSlot = numberOfOccurrencesInCurrentHourSlotForItem(item)
-        if (numOfOccurrencesInCurrentHourSlot < 10) {
+        if (numberOfItemOccurrencesInCurrentHourSlot() < 10) {
             return 1.0
         }
-        return Double(numOfOccurrencesInCurrentHourSlot) / averageNumberOfOccurrencesInHourSlotForItem(item)
+        return Double(numberOfOccurrencesInCurrentHourSlotForItem(item)) / averageNumberOfOccurrencesInHourSlotForItem(item)
+    }
+    
+    func numberOfItemOccurrencesInCurrentHourSlot() -> Int {
+        let currentHour = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitHour, fromDate: NSDate()).hour
+        var numOccurrences = 0
+        
+        for (_, itemOccurrences) in items {
+            for itemOccurrence in itemOccurrences {
+                if didItemOccurrInTimeSlotAtHour(currentHour, itemOccurrence: itemOccurrence) {
+                    numOccurrences = numOccurrences + 1
+                }
+            }
+        }
+        return numOccurrences;
     }
     
     func numberOfOccurrencesInCurrentHourSlotForItem(item: String) -> Int {
@@ -168,21 +223,38 @@ class AccessRank {
     }
     
     func numberOfOccurrencesForItem(item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
-        let calendar = NSCalendar.currentCalendar()
-        
-        return occurrencesForItem(item).filter({ itemOccurrence in
-            let itemDate = NSDate(timeIntervalSince1970: itemOccurrence.time)
-            let itemHour = calendar.components(NSCalendarUnit.CalendarUnitHour, fromDate: itemDate).hour
-            return (itemHour >= (hourOfDay - 1)) && (itemHour <= (hourOfDay + 1))
+        return occurrencesForItem(item).filter({ [unowned self] itemOccurrence in
+            return self.didItemOccurrInTimeSlotAtHour(hourOfDay, itemOccurrence: itemOccurrence)
         }).count
     }
     
+    func didItemOccurrInTimeSlotAtHour(hourOfDay: Int, itemOccurrence: ItemOccurrence) -> Bool {
+        let itemDate = NSDate(timeIntervalSince1970: itemOccurrence.time)
+        let itemHour = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitHour, fromDate: itemDate).hour
+        return (itemHour >= (hourOfDay - 1)) && (itemHour <= (hourOfDay + 1))
+    }
+    
+    // Time weight: Ratio for day of week
+    
     func dayOfWeekRatioForItem(item: String) -> Double {
-        let numOccurrencesAtCurrentWeekday = numberOfOccurrencesAtCurrentWeekdayForItem(item)
-        if (numOccurrencesAtCurrentWeekday < 10) {
+        if (numberOfItemOccurrencesAtCurrentWeekday() < 10) {
             return 1.0
         }
-        return Double(numOccurrencesAtCurrentWeekday) / averageNumberOfOccurrencesAcrossAllWeekdaysForItem(item)
+        return Double(numberOfOccurrencesAtCurrentWeekdayForItem(item)) / averageNumberOfOccurrencesAcrossAllWeekdaysForItem(item)
+    }
+    
+    func numberOfItemOccurrencesAtCurrentWeekday() -> Int {
+        let currentWeekday = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitWeekday, fromDate: NSDate()).weekday
+        var numOccurrences = 0
+        
+        for (_, itemOccurrences) in items {
+            for itemOccurrence in itemOccurrences {
+                if didItemOccurrAtWeekday(currentWeekday, itemOccurrence: itemOccurrence) {
+                    numOccurrences = numOccurrences + 1
+                }
+            }
+        }
+        return numOccurrences
     }
     
     func numberOfOccurrencesAtCurrentWeekdayForItem(item: String) -> Int {
@@ -198,17 +270,21 @@ class AccessRank {
         return Double(totalOccurrences) / 7
     }
     
-    // Helper methods
-    
     func numberOfOccurrencesForItem(item: String, atWeekday weekday: Int) -> Int {
         let calendar = NSCalendar.currentCalendar()
         
-        return occurrencesForItem(item).filter({ itemOccurrence in
-            let itemDate = NSDate(timeIntervalSince1970: itemOccurrence.time)
-            let itemWeekday = calendar.components(NSCalendarUnit.CalendarUnitWeekday, fromDate: itemDate).weekday
-            return (itemWeekday == weekday)
+        return occurrencesForItem(item).filter({ [unowned self] itemOccurrence in
+            return self.didItemOccurrAtWeekday(weekday, itemOccurrence: itemOccurrence)
         }).count
     }
+    
+    func didItemOccurrAtWeekday(weekday: Int, itemOccurrence: ItemOccurrence) -> Bool {
+        let itemDate = NSDate(timeIntervalSince1970: itemOccurrence.time)
+        let itemWeekday = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitWeekday, fromDate: itemDate).weekday
+        return (itemWeekday == weekday)
+    }
+    
+    // Helper methods
     
     func occurrencesForItem(item: String) -> ItemOccurrence[] {
         var occurrences = ItemOccurrence[]()

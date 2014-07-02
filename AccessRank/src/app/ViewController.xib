@@ -36,7 +36,7 @@
                     <nil key="highlightedColor"/>
                 </label>
                 <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" fixedFrame="YES" editable="NO" translatesAutoresizingMaskIntoConstraints="NO" id="79c-Uk-Kmb">
-                    <rect key="frame" x="10" y="357" width="300" height="123"/>
+                    <rect key="frame" x="10" y="357" width="300" height="120"/>
                     <color key="backgroundColor" red="0.9098039269" green="0.89803922179999995" blue="0.85490196939999996" alpha="1" colorSpace="calibratedRGB"/>
                     <fontDescription key="fontDescription" type="system" pointSize="18"/>
                     <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
