@@ -9,7 +9,7 @@ AccessRank
 - which fonts in a font chooser widget might be selected next
 - basically everthing where reuse or revisitation of things is involved...
 
-To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item while the algorithm tries to maximize both prediction accurracy and list stability. (Prediction accurracy is important since top items are easier and faster to access than items in the bottom section; list stability is important since the automatic re-ordering of items can impede usability when users try to reselect an item based on an already learned location.) You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
+To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item while the algorithm tries to maximize both prediction accurracy and list stability. (Prediction accurracy is important since top items are easier and faster to access than items in the bottom section; list stability is important since the automatic reordering of items can impede usability when users try to reselect an item based on an already learned location.) You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
 
 Here's the full reference for the [paper describing the formulas.](http://www.cosc.canterbury.ac.nz/andrew.cockburn/papers/AccessRank-camera.pdf):
 
@@ -30,7 +30,7 @@ Due to Swift currently lacking access modifiers, basically everything in AccessR
 
 #### Initializing
 
-*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.ListStability.Medium`. Other possible values are `.ListStability.Low` and `.ListStability.High`. *Low* stability means that prediction accurracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stabiity is the default value and should be used if you are insecure which one to choose.
+*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.ListStability.Medium`. Other possible values are `.ListStability.Low` and `.ListStability.High`. *Low* stability means that prediction accurracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.
 (Also see the three unit tests on list stability in `AccessRankTests` to get an idea how this value affects predictions.)
 
 ```swift
@@ -47,7 +47,7 @@ accessRank.useTimeWeighting = false
 
 #### Adding items
 
-Adding items is as simple as calling the `mostRecentItem` property setter. You should call this method every time a user selects an item in the list. The setter is implemented as an `optional` in Swift. You can set it to `nil` when the user deselects an item.
+Adding items is as simple as calling the `mostRecentItem` property setter. You should call this method whenever a user selects an item in the list. The setter is implemented as an `optional` in Swift so that you can set it to `nil` when the user deselects an item.
 
 ```swift
 accessRank.mostRecentItem = "A"
@@ -55,7 +55,7 @@ accessRank.mostRecentItem = "A"
 
 #### Removing items
 
-If your list is dynamic and items are removed in repsonse to some user interaction, you can remove previously added items by calling `removeItems` and passing an array of ids that should be removed.
+If your list is dynamic and items might be removed in repsonse to some user interaction, you can remove previously added items by calling `removeItems` and passing an array of ids that should be removed.
 
 ```swift
 accessRank.removeItems(["A", "B"])
@@ -63,7 +63,7 @@ accessRank.removeItems(["A", "B"])
 
 #### Predictions
 
-The `predictions` property getter returns the current predictions as an array containing all your item IDs (the ones you previously set using `mostRecentItem`) in sorted order. The first item in the array is the most likely next item.
+The `predictions` property getter returns the current predictions as an array containing all your item ids (the ones you previously set using `mostRecentItem`) in sorted order. The first item in the array is the most likely next item.
 
 ```swift
 println("predictions: \(accessRank.predictions)")
@@ -71,7 +71,7 @@ println("predictions: \(accessRank.predictions)")
 
 #### Delegate Methods
 
-The delegate method `accessRankDidUpdatePredictions(accessRank: AccessRank)` is called every time the predictions are updated. Predictions are updated when you call `mostRecentItem` or `removeItems`.
+The delegate method `accessRankDidUpdatePredictions(accessRank: AccessRank)` is called whenever the predictions are updated. Predictions are updated when you set `mostRecentItem`, or when you call `removeItems`.
 
 ```swift
 accessRank.delegate = self
@@ -97,4 +97,4 @@ let restoredAccessRank = AccessRank(
 
 ### Unit tests
 
-There's no exhaustive test coverage but a couple of unit tests should make sure that the basics work. If you change the implementation of AccessRank.swift, make sure that all tests still pass or, even better, add new tests ;).
+Although there's no exhaustive test coverage, a couple of unit tests in `AccessRankTests.swift` should at least make sure that the basics work. If you change the implementation of `AccessRank.swift`, make sure that all tests still pass or, even better, add new tests ;).
