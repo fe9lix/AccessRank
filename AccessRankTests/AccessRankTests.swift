@@ -96,7 +96,7 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         
         let restoredAccessRank = AccessRank(
             listStability: AccessRank.ListStability.Medium,
-            data:dataToPersist)
+            data: dataToPersist)
         
         XCTAssertEqualObjects(restoredAccessRank.mostRecentItem, accessRank.mostRecentItem)
         XCTAssertEqualObjects(restoredAccessRank.predictions, accessRank.predictions)
