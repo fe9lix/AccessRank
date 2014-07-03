@@ -1,9 +1,10 @@
 import XCTest
 import AccessRank
 
-class AccessRankTests: XCTestCase {
+class AccessRankTests: XCTestCase, AccessRankDelegate {
     
     let accessRank: AccessRank = AccessRank(listStability: AccessRank.ListStability.Medium)
+    var delegateExpectation: XCTestExpectation?
     
     override func setUp() {
         super.setUp()
@@ -99,6 +100,22 @@ class AccessRankTests: XCTestCase {
         
         XCTAssertEqualObjects(restoredAccessRank.mostRecentItem, accessRank.mostRecentItem)
         XCTAssertEqualObjects(restoredAccessRank.predictions, accessRank.predictions)
+    }
+    
+    func testDelegate() {
+        accessRank.mostRecentItem = "A"
+        
+        delegateExpectation = expectationWithDescription("update predictions");
+        
+        accessRank.delegate = self
+        accessRank.mostRecentItem = "B"
+        
+        waitForExpectationsWithTimeout(5.0, handler: nil)
+    }
+    
+    func accessRankDidUpdatePredictions(accessRank: AccessRank) {
+        XCTAssertEqual(accessRank.predictions.count, 1)
+        delegateExpectation?.fulfill()
     }
     
 }
