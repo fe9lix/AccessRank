@@ -31,4 +31,7 @@ REMOVE ITEMS!!!
 
 ### Usage
 
+#### List Stability
+See Unit Tests...
+
 - Example doesn't use auto-layout due to some obscure bugs in Xcode beta 2

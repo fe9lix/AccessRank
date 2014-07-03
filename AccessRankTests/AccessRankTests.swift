@@ -1,35 +1,104 @@
-//
-//  AccessRankTests.swift
-//  AccessRankTests
-//
-//  Created by Felix on 15.06.14.
-//  Copyright (c) 2014 fe9lix. All rights reserved.
-//
-
 import XCTest
+import AccessRank
 
 class AccessRankTests: XCTestCase {
     
+    let accessRank: AccessRank = AccessRank(listStability: AccessRank.ListStability.Medium)
+    
     override func setUp() {
         super.setUp()
-        // Put setup code here. This method is called before the invocation of each test method in the class.
     }
     
     override func tearDown() {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
         super.tearDown()
     }
     
-    func testExample() {
-        // This is an example of a functional test case.
-        XCTAssert(true, "Pass")
+    func testLowListStability() {
+        let accessRankLow = AccessRank(listStability: AccessRank.ListStability.Low)
+        accessRankLow.mostRecentItem = "A"
+        accessRankLow.mostRecentItem = "B"
+        accessRankLow.mostRecentItem = "C"
+        accessRankLow.mostRecentItem = "A"
+        accessRankLow.mostRecentItem = "C"
+        accessRankLow.mostRecentItem = "A"
+        
+        XCTAssertEqual(accessRankLow.predictions[0], "C")
     }
     
-    func testPerformanceExample() {
-        // This is an example of a performance test case.
-        self.measureBlock() {
-            // Put the code you want to measure the time of here.
-        }
+    func testMediumListStability() {
+        accessRank.mostRecentItem = "A"
+        accessRank.mostRecentItem = "B"
+        accessRank.mostRecentItem = "C"
+        accessRank.mostRecentItem = "A"
+        accessRank.mostRecentItem = "C"
+        accessRank.mostRecentItem = "A"
+        
+        XCTAssertEqual(accessRank.predictions[0], "B")
+    }
+    
+    func testHighListStability() {
+        let accessRankHigh = AccessRank(listStability: AccessRank.ListStability.High)
+        accessRankHigh.mostRecentItem = "A"
+        accessRankHigh.mostRecentItem = "B"
+        accessRankHigh.mostRecentItem = "C"
+        accessRankHigh.mostRecentItem = "A"
+        accessRankHigh.mostRecentItem = "C"
+        accessRankHigh.mostRecentItem = "A"
+        
+        XCTAssertEqual(accessRankHigh.predictions[0], "B")
+    }
+    
+    func testNumberOfPredictions() {
+        accessRank.mostRecentItem = "A"
+        accessRank.mostRecentItem = "B"
+        accessRank.mostRecentItem = "C"
+        
+        XCTAssertEqual(accessRank.predictions.count, 2)
+    }
+    
+    func testPredictionsShouldNotContainInitialItem() {
+        accessRank.mostRecentItem = "A"
+        accessRank.mostRecentItem = "B"
+        accessRank.mostRecentItem = nil
+        accessRank.mostRecentItem = "C"
+        
+        XCTAssertFalse(contains(accessRank.predictions, accessRank.initialItemID))
+    }
+ 
+    func testPredictionsShouldNotContainMostRecentItem() {
+        accessRank.mostRecentItem = "A"
+        accessRank.mostRecentItem = "B"
+        accessRank.mostRecentItem = "C"
+        
+        XCTAssertFalse(contains(accessRank.predictions, accessRank.mostRecentItem!))
+    }
+    
+    func testRemoveItems() {
+        accessRank.mostRecentItem = "A"
+        accessRank.mostRecentItem = "B"
+        accessRank.mostRecentItem = "C"
+        accessRank.mostRecentItem = "A"
+        
+        accessRank.removeItems(["C", "A"])
+        
+        XCTAssertFalse(contains(accessRank.predictions, "A"))
+        XCTAssertFalse(contains(accessRank.predictions, "C"))
+        XCTAssertNil(accessRank.mostRecentItem)
+    }
+    
+    func testPersistence() {
+        accessRank.mostRecentItem = "A"
+        accessRank.mostRecentItem = "B"
+        accessRank.mostRecentItem = "C"
+        
+        let dataToPersist = accessRank.toDictionary()
+        
+        let restoredAccessRank = AccessRank(
+            listStability: AccessRank.ListStability.Medium,
+            data:dataToPersist)
+        
+        XCTAssertEqualObjects(restoredAccessRank.mostRecentItem, accessRank.mostRecentItem)
+        XCTAssertEqualObjects(restoredAccessRank.predictions, accessRank.predictions)
     }
     
 }
