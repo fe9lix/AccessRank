@@ -9,7 +9,7 @@ AccessRank
 - which fonts in a font chooser widget might be selected next
 - basically everthing where reuse or revisitation of things is involved...
 
-To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item while the algorithm tries to maximize both prediction accurracy and list stability. (Prediction accurracy is important since top items are easier and faster to access than items in the bottom section; list stability is important since the automatic reordering of items can impede usability when users try to reselect an item based on an already learned location.) You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
+To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item while the algorithm tries to maximize both prediction accurracy and list stability. Prediction accurracy is important since top items are easier and faster to access than items in the bottom section; list stability is important since the automatic reordering of items can impede usability when users try to reselect an item based on an already learned location. You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
 
 Here's the full reference for the [paper describing the formulas.](http://www.cosc.canterbury.ac.nz/andrew.cockburn/papers/AccessRank-camera.pdf):
 
@@ -22,11 +22,11 @@ Just copy the folder `src/AccessRank` into your project.
 ### Demo Project
 
 The demo project shows a simple usage example: It contains a table view with country names and a text view with predictions. When you select a country name, the item is added to *AccessRank*, and the list of predictions on which item you might select next is udated.  
-*Note*: The example doesn't use auto-layout due to some obscure bugs in Xcode beta 2...
+*Note*: The example doesn't use auto-layout due to some obscure bugs in Xcode 6 beta 2...
 
 ### Usage
 
-Due to Swift currently lacking access modifiers, basically everything in AccessRank.swift is "public". The properties and methods which are supposed to be used by clients are documented here.
+Due to the Swift language currently lacking access modifiers, basically everything in AccessRank.swift is *public*. The properties and methods which are supposed to be used by clients are documented here.
 
 #### Initializing
 
@@ -45,15 +45,15 @@ The only feature you can currently configure is turning *time weighting* on and 
 accessRank.useTimeWeighting = false
 ```
 
-#### Adding items
+#### Adding Items
 
-Adding items is as simple as calling the `mostRecentItem` property setter. You should call this method whenever a user selects an item in the list. The setter is implemented as an `optional` in Swift so that you can set it to `nil` when the user deselects an item.
+Adding items is as simple as calling the `mostRecentItem` property setter with an item id. You should set this property whenever a user selects an item in the list. The setter is implemented as an `optional` in Swift so that you can set it to `nil` when the user deselects an item.
 
 ```swift
 accessRank.mostRecentItem = "A"
 ```
 
-#### Removing items
+#### Removing Items
 
 If your list is dynamic and items might be removed in repsonse to some user interaction, you can remove previously added items by calling `removeItems` and passing an array of ids that should be removed.
 
@@ -95,6 +95,6 @@ let restoredAccessRank = AccessRank(
     data: dataToPersist)
 ```
 
-### Unit tests
+### Unit Tests
 
 Although there's no exhaustive test coverage, a couple of unit tests in `AccessRankTests.swift` should at least make sure that the basics work. If you change the implementation of `AccessRank.swift`, make sure that all tests still pass or, even better, add new tests ;).
