@@ -9,7 +9,7 @@ AccessRank
 - which fonts in a font-chooser widget might be selected next.
 - basically every part in a user interface where reuse or revisitation of things is involved...
 
-To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item, while the algorithm tries to maximize both prediction accurracy and list stability. Prediction accurracy is important since top items are easier and faster to access than items in bottom sections; list stability is important since automatic reordering of items can impede usability when users try to reselect an item based on an already learned location. You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
+To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item, while the algorithm tries to maximize both prediction accuracy and list stability. Prediction accuracy is important since top items are easier and faster to access than items in bottom sections; list stability is important since automatic reordering of items can impede usability when users try to reselect an item based on an already learned location. You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
 
 Once *AccessRank* has calculated predictions, you can use the resulting list to enhance your user interface in various ways. For example, you could display the most likely next items in an additional list as suggestions, or you could visually highlight relevant objects to give users cues where they might want to go next.
 
@@ -32,7 +32,7 @@ Due to the Swift language currently lacking access modifiers, basically everythi
 
 #### Initializing
 
-*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.ListStability.Medium`. Other possible values are `.ListStability.Low` and `.ListStability.High`. *Low* stability means that prediction accurracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.  
+*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.ListStability.Medium`. Other possible values are `.ListStability.Low` and `.ListStability.High`. *Low* stability means that prediction accuracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.  
 (Also see the three unit tests on list stability in `AccessRankTests.swift` to get an idea on how this value affects predictions.)
 
 ```swift
@@ -57,7 +57,7 @@ accessRank.mostRecentItem = "A"
 
 #### Removing Items
 
-If your list is dynamic and items might be removed in repsonse to user interaction, you can remove previously added items by calling `removeItems` and passing the method an array of ids to be removed.
+If your list is dynamic and items might be removed in response to user interaction, you can remove previously added items by calling `removeItems` and passing the method an array of ids to be removed.
 
 ```swift
 accessRank.removeItems(["A", "B"])
