@@ -5,11 +5,13 @@ AccessRank
 
 *AccessRank* is a Swift implementation of the [AccessRank algorithm by Fitchett and Cockburn](http://www.cosc.canterbury.ac.nz/andrew.cockburn/papers/AccessRank-camera.pdf) (full reference below) for iOS and Mac OS apps. The algorithm predicts which items in a list users might select or visit next by taking multiple sources of input into account. For instance, you could use *AccessRank* to generate a list of predictions for:
 - which documents a user is most likely to open next.
-- which commands in a auto-complete menu might be triggered next.
+- which commands in an auto-complete menu might be triggered next.
 - which fonts in a font-chooser widget might be selected next.
 - basically everthing in a user interface where reuse or revisitation of things is involved...
 
 To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item, while the algorithm tries to maximize both prediction accurracy and list stability. Prediction accurracy is important since top items are easier and faster to access than items in bottom sections; list stability is important since automatic reordering of items can impede usability when users try to reselect an item based on an already learned location. You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
+
+Once *AccessRank* has calculated predictions, you can use the resulting list to enhance your user interface in various ways. For example, you could display the most likely next items in an additional list as suggestions, or you could visually highlight relevant objects to give users cues where they might want to go next.
 
 Here's the full reference for the [paper describing the formulas.](http://www.cosc.canterbury.ac.nz/andrew.cockburn/papers/AccessRank-camera.pdf):
 
