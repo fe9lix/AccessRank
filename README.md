@@ -1,7 +1,7 @@
 AccessRank
 ==========
 
-### AccessRank
+### About AccessRank
 
 *AccessRank* is a Swift implementation of the [AccessRank algorithm by Fitchett and Cockburn](http://www.cosc.canterbury.ac.nz/andrew.cockburn/papers/AccessRank-camera.pdf) (full reference below) for iOS and Mac OS apps. The algorithm predicts which items in a list users might select or visit next by taking multiple sources of input into account. For instance, you could use *AccessRank* to generate a list of predictions for:
 - which documents a user is most likely to open next.
