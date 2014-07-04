@@ -7,7 +7,7 @@ AccessRank
 - which documents a user is most likely to open next.
 - which commands in an auto-complete menu might be triggered next.
 - which fonts in a font-chooser widget might be selected next.
-- basically everthing in a user interface where reuse or revisitation of things is involved...
+- basically every part in a user interface where reuse or revisitation of things is involved...
 
 To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item, while the algorithm tries to maximize both prediction accurracy and list stability. Prediction accurracy is important since top items are easier and faster to access than items in bottom sections; list stability is important since automatic reordering of items can impede usability when users try to reselect an item based on an already learned location. You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
 
