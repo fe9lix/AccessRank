@@ -3,13 +3,13 @@ AccessRank
 
 ### AccessRank
 
-*AccessRank* is a Swift implementation of the [AccessRank algorithm by Fitchett and Cockburn](http://www.cosc.canterbury.ac.nz/andrew.cockburn/papers/AccessRank-camera.pdf) (full reference below) for iOS and Mac OS apps. The algorithm predicts which items in a list users might select, view, or visit next by taking multiple sources of input into account. For instance, you could use *AccessRank* to generate a list of predictions for:
-- which documents the user is most likely to open next
-- which commands in a auto-complete menu might be triggered next
-- which fonts in a font chooser widget might be selected next
-- basically everthing where reuse or revisitation of things is involved...
+*AccessRank* is a Swift implementation of the [AccessRank algorithm by Fitchett and Cockburn](http://www.cosc.canterbury.ac.nz/andrew.cockburn/papers/AccessRank-camera.pdf) (full reference below) for iOS and Mac OS apps. The algorithm predicts which items in a list users might select or visit next by taking multiple sources of input into account. For instance, you could use *AccessRank* to generate a list of predictions for:
+- which documents a user is most likely to open next.
+- which commands in a auto-complete menu might be triggered next.
+- which fonts in a font-chooser widget might be selected next.
+- basically everthing in a user interface where reuse or revisitation of things is involved...
 
-To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item while the algorithm tries to maximize both prediction accurracy and list stability. Prediction accurracy is important since top items are easier and faster to access than items in the bottom section; list stability is important since the automatic reordering of items can impede usability when users try to reselect an item based on an already learned location. You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
+To improve on other common methods such as recency-based and frequency-based predictions, *AccessRank* adds Markov weights, time weighting, and other parameters for calculating a final score for each item, while the algorithm tries to maximize both prediction accurracy and list stability. Prediction accurracy is important since top items are easier and faster to access than items in bottom sections; list stability is important since automatic reordering of items can impede usability when users try to reselect an item based on an already learned location. You can configure the algorithm depending on whether you prefer more prediction accuracy or more list stability.
 
 Here's the full reference for the [paper describing the formulas.](http://www.cosc.canterbury.ac.nz/andrew.cockburn/papers/AccessRank-camera.pdf):
 
@@ -21,7 +21,7 @@ Just copy the folder `src/AccessRank` into your project.
 
 ### Demo Project
 
-The demo project shows a simple usage example: It contains a table view with country names and a text view with predictions. When you select a country name, the item is added to *AccessRank*, and the list of predictions on which item you might select next is udated.  
+The demo project shows a simple usage example: It contains a table view with country names and a text view with predictions. When you select a country name, the item is added to *AccessRank*, and the list of predictions for which item you might select next is updated.  
 *Note*: The example doesn't use auto-layout due to some obscure bugs in Xcode 6 beta 2...
 
 ### Usage
@@ -30,8 +30,8 @@ Due to the Swift language currently lacking access modifiers, basically everythi
 
 #### Initializing
 
-*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.ListStability.Medium`. Other possible values are `.ListStability.Low` and `.ListStability.High`. *Low* stability means that prediction accurracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.
-(Also see the three unit tests on list stability in `AccessRankTests` to get an idea how this value affects predictions.)
+*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.ListStability.Medium`. Other possible values are `.ListStability.Low` and `.ListStability.High`. *Low* stability means that prediction accurracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.  
+(Also see the three unit tests on list stability in `AccessRankTests.swift` to get an idea on how this value affects predictions.)
 
 ```swift
 let accessRank = AccessRank(listStability: AccessRank.ListStability.Medium)
@@ -39,7 +39,7 @@ let accessRank = AccessRank(listStability: AccessRank.ListStability.Medium)
 
 #### Configuration
 
-The only feature you can currently configure is turning *time weighting* on and off. The *time weighting* component of *AccessRank* takes the time of day and weekday into account. Put simply, items are given more weight when they are revisited in roughly the same time slot as previously. Since the calculation might currently be somewhat inefficient in its current form, you can turn this feature off. You should turn it off if you need to work with large lists *and* experience some performance problems, or if you don't need time weighting in your application domain.
+The only feature you can currently configure is turning *time weighting* on and off. The *time weighting* component of *AccessRank* takes the time of day and weekday into account. Put simply, items are given more weight when they are revisited in roughly the same time slot as previously. Since the calculation might currently be somewhat inefficient in its current form (although I haven't measured it), you can turn this feature off. You should turn it off if you need to work with large lists *and* if you are experiencing performance problems, or if you don't need time weighting in your application domain.
 
 ```swift
 accessRank.useTimeWeighting = false
@@ -55,7 +55,7 @@ accessRank.mostRecentItem = "A"
 
 #### Removing Items
 
-If your list is dynamic and items might be removed in repsonse to some user interaction, you can remove previously added items by calling `removeItems` and passing an array of ids that should be removed.
+If your list is dynamic and items might be removed in repsonse to user interaction, you can remove previously added items by calling `removeItems` and passing the method an array of ids to be removed.
 
 ```swift
 accessRank.removeItems(["A", "B"])
@@ -63,7 +63,7 @@ accessRank.removeItems(["A", "B"])
 
 #### Predictions
 
-The `predictions` property getter returns the current predictions as an array containing all your item ids (the ones you previously set using `mostRecentItem`) in sorted order. The first item in the array is the most likely next item.
+The `predictions` property getter returns the current predictions as an array containing all your item ids (the ones you previously set using `mostRecentItem`) in sorted order. The first item in the array is the most likely next item. To display the predicated items somewhere in the user interface, these ids can then be matched to the item ids of your own list data structure. 
 
 ```swift
 println("predictions: \(accessRank.predictions)")
@@ -77,7 +77,7 @@ The delegate method `accessRankDidUpdatePredictions(accessRank: AccessRank)` is 
 accessRank.delegate = self
 
 func accessRankDidUpdatePredictions(accessRank: AccessRank) {
-	println("predictions: \(accessRank.predictions)")
+    println("predictions: \(accessRank.predictions)")
 }
 ```
 
