@@ -65,7 +65,7 @@ accessRank.removeItems(["A", "B"])
 
 #### Predictions
 
-The `predictions` property getter returns the current predictions as an array containing all your item ids (the ones you previously set using `mostRecentItem`) in sorted order. The first item in the array is the most likely next item. To display the predicated items somewhere in the user interface, these ids can then be matched to the item ids of your own list data structure. 
+The `predictions` property getter returns the current predictions as an array containing all your item ids (the ones you previously set using `mostRecentItem`) in sorted order. The first item in the array is the most likely next item. To display the predicted items somewhere in the user interface, these ids can then be matched to the item ids of your own list data structure. 
 
 ```swift
 println("predictions: \(accessRank.predictions)")

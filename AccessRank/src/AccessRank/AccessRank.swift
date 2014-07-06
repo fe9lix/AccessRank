@@ -207,7 +207,7 @@ class AccessRank {
         
         for (_, itemOccurrences) in items {
             for itemOccurrence in itemOccurrences {
-                if didItemOccurrInTimeSlotAtHour(currentHour, itemOccurrence: itemOccurrence) {
+                if didItemOccurInTimeSlotAtHour(currentHour, itemOccurrence: itemOccurrence) {
                     numOccurrences = numOccurrences + 1
                 }
             }
@@ -233,11 +233,11 @@ class AccessRank {
     
     func numberOfOccurrencesForItem(item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
         return occurrencesForItem(item).filter({ [unowned self] itemOccurrence in
-            return self.didItemOccurrInTimeSlotAtHour(hourOfDay, itemOccurrence: itemOccurrence)
+            return self.didItemOccurInTimeSlotAtHour(hourOfDay, itemOccurrence: itemOccurrence)
         }).count
     }
     
-    func didItemOccurrInTimeSlotAtHour(hourOfDay: Int, itemOccurrence: ItemOccurrence) -> Bool {
+    func didItemOccurInTimeSlotAtHour(hourOfDay: Int, itemOccurrence: ItemOccurrence) -> Bool {
         let itemDate = NSDate(timeIntervalSince1970: itemOccurrence.time)
         let itemHour = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitHour, fromDate: itemDate).hour
         return (itemHour >= (hourOfDay - 1)) && (itemHour <= (hourOfDay + 1))
@@ -258,7 +258,7 @@ class AccessRank {
         
         for (_, itemOccurrences) in items {
             for itemOccurrence in itemOccurrences {
-                if didItemOccurrAtWeekday(currentWeekday, itemOccurrence: itemOccurrence) {
+                if didItemOccurAtWeekday(currentWeekday, itemOccurrence: itemOccurrence) {
                     numOccurrences = numOccurrences + 1
                 }
             }
@@ -283,11 +283,11 @@ class AccessRank {
         let calendar = NSCalendar.currentCalendar()
         
         return occurrencesForItem(item).filter({ [unowned self] itemOccurrence in
-            return self.didItemOccurrAtWeekday(weekday, itemOccurrence: itemOccurrence)
+            return self.didItemOccurAtWeekday(weekday, itemOccurrence: itemOccurrence)
         }).count
     }
     
-    func didItemOccurrAtWeekday(weekday: Int, itemOccurrence: ItemOccurrence) -> Bool {
+    func didItemOccurAtWeekday(weekday: Int, itemOccurrence: ItemOccurrence) -> Bool {
         let itemDate = NSDate(timeIntervalSince1970: itemOccurrence.time)
         let itemWeekday = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitWeekday, fromDate: itemDate).weekday
         return (itemWeekday == weekday)
