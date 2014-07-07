@@ -106,30 +106,70 @@ class AccessRank {
     // Prediction list
     
     func updatePredictionList()  {
+        updateScoredItems()
+        sortPredictionList()
+        updateItemRanks()
+        addItemsToPredictionList()
+        
+        delegate?.accessRankDidUpdatePredictions(self)
+    }
+    
+    func updateScoredItems() {
         for (index, scoredItem) in enumerate(predictionList) {
             predictionList[index] = ScoredItem(
                 id: scoredItem.id,
                 score: scoreForItem(scoredItem.id))
         }
-        
-        predictionList.sort { [unowned self] A, B in
-            return A.score > (B.score + self.listStabilityValue.d)
-        }
-        
-        if mostRecentItemID != initialItemID && !predictionsListContainsItem(mostRecentItemID) {
-            predictionList += ScoredItem(id: mostRecentItemID, score: 0.0)
-        }
-        
-        delegate?.accessRankDidUpdatePredictions(self)
     }
     
-    func predictionsListContainsItem(item: String) -> Bool {
-        for scoredItem in predictionList {
-            if scoredItem.id == item {
-                return true
+    func sortPredictionList() {
+        predictionList.sort { [unowned self] A, B in
+            var itemA = self.items[A.id]!
+            var itemB = self.items[B.id]!
+            
+            if (itemA.rank < itemB.rank) && (B.score > A.score) {
+                let stableScoreA = A.score + self.listStabilityValue.d
+                if B.score > stableScoreA {
+                    return false
+                } else {
+                    if B.score == stableScoreA {
+                        return itemA.timeOfLastVisit > itemB.timeOfLastVisit
+                    } else {
+                        return true
+                    }
+                }
             }
+            
+            if (itemA.rank > itemB.rank) && (B.score < A.score) {
+                let stableScoreB = B.score + self.listStabilityValue.d
+                if A.score > stableScoreB {
+                    return true
+                } else {
+                    if A.score == stableScoreB {
+                        return itemA.timeOfLastVisit > itemB.timeOfLastVisit
+                    } else {
+                        return false
+                    }
+                }
+            }
+            
+            return A.score > B.score
         }
-        return false
+    }
+    
+    func updateItemRanks() {
+        for (index, scoredItem) in enumerate(predictionList) {
+            var item = items[scoredItem.id]!
+            item.changeRank(index)
+            items[scoredItem.id] = item
+        }
+    }
+    
+    func addItemsToPredictionList() {
+        let item = items[mostRecentItemID]!
+        if (mostRecentItemID != initialItemID) && item.numberOfVisits == 1 {
+            predictionList += ScoredItem(id: mostRecentItemID, score: 0.0)
+        }
     }
     
     // Combined score
@@ -171,6 +211,16 @@ class AccessRank {
         return visitsToItem(item).reduce(0.0, { [unowned self] weight, itemVisit in
             return weight + pow(1 / p, l * Double(self.visitNumber - itemVisit.visitNumber))
         })
+    }
+    
+    func visitsToItem(item: String) -> ItemVisit[] {
+        var visits = ItemVisit[]()
+        for (_, itemState) in items {
+            if let itemVisits = itemState.nextVisits[item] {
+                visits += itemVisits
+            }
+        }
+        return visits
     }
     
     // Time weight
@@ -263,18 +313,6 @@ class AccessRank {
         return numVisits;
     }
     
-    // Helper methods
-    
-    func visitsToItem(item: String) -> ItemVisit[] {
-        var visits = ItemVisit[]()
-        for (_, itemState) in items {
-            if let itemVisits = itemState.nextVisits[item] {
-                visits += itemVisits
-            }
-        }
-        return visits
-    }
-    
     // Convenience methods for persisting and restoring the data structure
     
     func toDictionary() -> Dictionary<String, AnyObject> {
@@ -349,17 +387,16 @@ class AccessRank {
     
     struct ItemState {
         var numberOfVisits: Int = 0
+        var timeOfLastVisit: NSTimeInterval = 0
+        var rank = Int.max
         var nextVisits = Dictionary<String, ItemVisit[]>()
         
         init() {}
         
-        init(numberOfVisits: Int, nextVisits: Dictionary<String, ItemVisit[]>) {
-            self.numberOfVisits = numberOfVisits
-            self.nextVisits = nextVisits
-        }
-        
         init(data: Dictionary<String, AnyObject>) {
             let numberOfVisitsValue: AnyObject = data["numberOfVisits"]!
+            let timeOfLastVisitValue: AnyObject = data["timeOfLastVisit"]!
+            let rankValue: AnyObject = data["rank"]!
             
             let nextVisitsObj = data["nextVisits"]! as? Dictionary<String,  Dictionary<String, AnyObject>[]>
             var nextVisitsValue = Dictionary<String, ItemVisit[]>()
@@ -368,11 +405,14 @@ class AccessRank {
             }
             
             self.numberOfVisits = numberOfVisitsValue as Int
+            self.timeOfLastVisit = timeOfLastVisitValue as NSTimeInterval
+            self.rank = rankValue as Int
             self.nextVisits = nextVisitsValue
         }
         
         mutating func increaseVisits() {
             numberOfVisits += 1
+            timeOfLastVisit = NSDate().timeIntervalSince1970
         }
         
         mutating func addVisitToItem(item: String, visitNumber: Int) {
@@ -392,6 +432,10 @@ class AccessRank {
         
         mutating func removeVisitsToItem(item: String) {
             nextVisits.removeValueForKey(item)
+        }
+        
+        mutating func changeRank(rank: Int) {
+            self.rank = rank
         }
         
         func numberOfTransitionsToItem(item: String) -> Int {
@@ -454,8 +498,10 @@ class AccessRank {
             }
             
             return [
-                "nextVisits": nextVisitsObj,
-                "numberOfVisits": numberOfVisits]
+                "numberOfVisits": numberOfVisits,
+                "timeOfLastVisit": timeOfLastVisit,
+                "rank": rank,
+                "nextVisits": nextVisitsObj]
         }
         
         func markovDescription() -> String {

@@ -20,8 +20,7 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         accessRankLow.mostRecentItem = "B"
         accessRankLow.mostRecentItem = "C"
         accessRankLow.mostRecentItem = "A"
-        accessRankLow.mostRecentItem = "C"
-        accessRankLow.mostRecentItem = "A"
+        accessRankLow.mostRecentItem = "B"
         
         XCTAssertEqual(accessRankLow.predictions[0], "C")
     }
@@ -31,10 +30,9 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         accessRank.mostRecentItem = "B"
         accessRank.mostRecentItem = "C"
         accessRank.mostRecentItem = "A"
-        accessRank.mostRecentItem = "C"
-        accessRank.mostRecentItem = "A"
+        accessRank.mostRecentItem = "B"
         
-        XCTAssertEqual(accessRank.predictions[0], "B")
+        XCTAssertEqual(accessRank.predictions[0], "C")
     }
     
     func testHighListStability() {
@@ -43,10 +41,9 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         accessRankHigh.mostRecentItem = "B"
         accessRankHigh.mostRecentItem = "C"
         accessRankHigh.mostRecentItem = "A"
-        accessRankHigh.mostRecentItem = "C"
-        accessRankHigh.mostRecentItem = "A"
+        accessRankHigh.mostRecentItem = "B"
         
-        XCTAssertEqual(accessRankHigh.predictions[0], "B")
+        XCTAssertEqual(accessRankHigh.predictions[0], "A")
     }
     
     func testNumberOfPredictions() {
@@ -99,6 +96,7 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
             data: dataToPersist)
         
         XCTAssertEqualObjects(restoredAccessRank.mostRecentItem, accessRank.mostRecentItem)
+        XCTAssertEqualObjects(restoredAccessRank.visitNumber, accessRank.visitNumber)
         XCTAssertEqualObjects(restoredAccessRank.predictions, accessRank.predictions)
     }
     

@@ -41,7 +41,7 @@ let accessRank = AccessRank(listStability: AccessRank.ListStability.Medium)
 
 #### Configuration
 
-The only feature you can currently configure is turning *time weighting* on and off. The *time weighting* component of *AccessRank* takes the time of day and weekday into account. Put simply, items are given more weight when they are revisited in roughly the same time slot as previously. Since the calculation might currently be somewhat inefficient in its current form (although I haven't measured it), you can turn this feature off. You should turn it off if you need to work with large lists *and* if you are experiencing performance problems, or if you don't need time weighting in your application domain.
+The only feature you can currently configure is turning *time weighting* on and off. The *time weighting* component of *AccessRank* takes the time of day and weekday into account. Put simply, items are given more weight when they are revisited in roughly the same time slot as previously. If you don't need time weighting in your application domain, you should turn this feature off to increase performance.
 
 ```swift
 accessRank.useTimeWeighting = false
