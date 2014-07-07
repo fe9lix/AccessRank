@@ -11,20 +11,9 @@ class AccessRank {
 
     var delegate: AccessRankDelegate?
     
-    struct ItemOccurrence {
-        var id: String
-        var time: NSTimeInterval
-    }
-    
-    struct ScoredItem {
-        var id: String
-        var score: Double
-    }
-    
     enum ListStability {
         case Low, Medium, High
     }
-    
     var listStability: ListStability
     var listStabilityValue: (l: Double, d: Double) {
         switch listStability {
@@ -38,8 +27,9 @@ class AccessRank {
     }
     var useTimeWeighting = true
     
-    var items = Dictionary<String, ItemOccurrence[]>()
+    var items = Dictionary<String, ItemState>()
     var initialItemID = "<initial>"
+    var visitNumber: Int = 0
     
     var predictionList = ScoredItem[]()
     var predictions: String[] {
@@ -60,12 +50,23 @@ class AccessRank {
     
     var mostRecentItem: String? {
         didSet {
+            visitNumber += 1
+            
             let previousItem = oldValue ? oldValue! : initialItemID
-            var nextItems = items[previousItem] ? items[previousItem]! : ItemOccurrence[]()
-            nextItems += ItemOccurrence(id: mostRecentItemID, time: NSDate().timeIntervalSince1970)
-            items[previousItem] = nextItems
+            var previousItemState = stateForItem(previousItem)
+            previousItemState.addVisitToItem(mostRecentItemID, visitNumber: visitNumber)
+            items[previousItem] = previousItemState
+            
+            var newItemState = stateForItem(mostRecentItemID)
+            newItemState.increaseVisits()
+            items[mostRecentItemID] = newItemState
+            
             updatePredictionList()
         }
+    }
+    
+    func stateForItem(item: String) -> ItemState {
+        return items[item] ? items[item]! : ItemState()
     }
     
     var mostRecentItemID: String {
@@ -87,20 +88,11 @@ class AccessRank {
     }
     
     func removeItem(item: String) {
-        for (itemID, var itemOccurrences) in items {
+        for (itemID, var itemState) in items {
             if itemID == item {
                 items.removeValueForKey(itemID)
             } else {
-                for (index, itemOccurrence) in enumerate(itemOccurrences) {
-                    if (itemOccurrence.id == item) {
-                        itemOccurrences.removeAtIndex(index)
-                    }
-                }
-                if itemOccurrences.isEmpty {
-                    items.removeValueForKey(itemID)
-                } else {
-                    items[itemID] = itemOccurrences
-                }
+                itemState.removeVisitsToItem(item)
             }
         }
         
@@ -115,7 +107,9 @@ class AccessRank {
     
     func updatePredictionList()  {
         for (index, scoredItem) in enumerate(predictionList) {
-            predictionList[index] = ScoredItem(id: scoredItem.id, score: scoreForItem(scoredItem.id))
+            predictionList[index] = ScoredItem(
+                id: scoredItem.id,
+                score: scoreForItem(scoredItem.id))
         }
         
         predictionList.sort { [unowned self] A, B in
@@ -152,34 +146,30 @@ class AccessRank {
     // Markov weight
     
     func markovWeightForItem(item: String) -> Double {
-        let xn = Double(numberOfOccurrencesForMostRecentItem())
+        let xn = Double(numberOfVisitsForMostRecentItem())
         let x = Double(numberOfTransitionsFromMostRecentItemToItem(item))
         
         return (x + 1) / (xn + 1)
     }
     
-    func numberOfOccurrencesForMostRecentItem() -> Int {
-        return occurrencesForItem(mostRecentItemID).count
+    func numberOfVisitsForMostRecentItem() -> Int {
+        let numVisits = items[mostRecentItemID]?.numberOfVisits
+        return numVisits ? numVisits! : 0
     }
     
     func numberOfTransitionsFromMostRecentItemToItem(item: String) -> Int {
-        if let nextItems = items[mostRecentItemID] {
-            return nextItems.reduce(0, { numTransitions, itemOccurrence in
-                return itemOccurrence.id == item ? numTransitions + 1 : numTransitions
-            })
-        }
-        return 0
+        let numTransitions = items[mostRecentItemID]?.numberOfTransitionsToItem(item)
+        return numTransitions ? numTransitions! : 0
     }
     
     // CRF weight
     
     func combinedRecencyFrequencyWeightForItem(item: String) -> Double {
-        let currentTime = NSDate().timeIntervalSince1970
         let p = 2.0
         let l = 0.1
         
-        return occurrencesForItem(item).reduce(0.0, { weight, itemOccurrence in
-            return weight + pow(1 / p, l * (currentTime - itemOccurrence.time))
+        return visitsToItem(item).reduce(0.0, { [unowned self] weight, itemVisit in
+            return weight + pow(1 / p, l * Double(self.visitNumber - itemVisit.visitNumber))
         })
     }
     
@@ -195,165 +185,319 @@ class AccessRank {
     // Time weight: Ratio for time of day
     
     func hourOfDayRatioForItem(item: String) -> Double {
-        if (numberOfItemOccurrencesInCurrentHourSlot() < 10) {
+        if (numberOfCurrentHourItemVisits() < 10) {
             return 1.0
         }
-        return Double(numberOfOccurrencesInCurrentHourSlotForItem(item)) / averageNumberOfOccurrencesInHourSlotForItem(item)
+        return Double(numberOfCurrentHourVisitsToItem(item)) / averageNumberOfCurrentHourVisitsToItem(item)
     }
     
-    func numberOfItemOccurrencesInCurrentHourSlot() -> Int {
-        let currentHour = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitHour, fromDate: NSDate()).hour
-        var numOccurrences = 0
-        
-        for (_, itemOccurrences) in items {
-            for itemOccurrence in itemOccurrences {
-                if didItemOccurInTimeSlotAtHour(currentHour, itemOccurrence: itemOccurrence) {
-                    numOccurrences = numOccurrences + 1
-                }
-            }
+    func numberOfCurrentHourItemVisits() -> Int {
+        var numVisits = 0
+        for (_, itemState) in items {
+            numVisits += itemState.numberOfVisitsToItemsInCurrentHourSlot()
         }
-        return numOccurrences;
+        return numVisits
     }
     
-    func numberOfOccurrencesInCurrentHourSlotForItem(item: String) -> Int {
-        let currentHour = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitHour, fromDate: NSDate()).hour
-        return numberOfOccurrencesForItem(item, inTimeSlotAtHour: currentHour)
+    func numberOfCurrentHourVisitsToItem(item: String) -> Int {
+        let currentHour = NSCalendar.currentCalendar().components(
+            NSCalendarUnit.CalendarUnitHour, fromDate: NSDate()).hour
+        return numberOfVisitsToItem(item, inTimeSlotAtHour: currentHour)
     }
     
-    func averageNumberOfOccurrencesInHourSlotForItem(item: String) -> Double {
-        var totalOccurrences = 0
-        var hour = 1
+    func averageNumberOfCurrentHourVisitsToItem(item: String) -> Double {
+        var totalVisits = 0
+        var hourOfDay = 1
         
-        while hour < 24 {
-            totalOccurrences += numberOfOccurrencesForItem(item, inTimeSlotAtHour: hour)
-            hour += 3
+        while hourOfDay < 24 {
+            totalVisits += numberOfVisitsToItem(item, inTimeSlotAtHour: hourOfDay)
+            hourOfDay += 3
         }
-        return Double(totalOccurrences) / 8
+        return Double(totalVisits) / 8
     }
     
-    func numberOfOccurrencesForItem(item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
-        return occurrencesForItem(item).filter({ [unowned self] itemOccurrence in
-            return self.didItemOccurInTimeSlotAtHour(hourOfDay, itemOccurrence: itemOccurrence)
-        }).count
-    }
-    
-    func didItemOccurInTimeSlotAtHour(hourOfDay: Int, itemOccurrence: ItemOccurrence) -> Bool {
-        let itemDate = NSDate(timeIntervalSince1970: itemOccurrence.time)
-        let itemHour = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitHour, fromDate: itemDate).hour
-        return (itemHour >= (hourOfDay - 1)) && (itemHour <= (hourOfDay + 1))
+    func numberOfVisitsToItem(item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
+        var numVisits = 0
+        for (itemID, itemState) in items {
+            numVisits += itemState.numberOfVisitsToItem(itemID, inTimeSlotAtHour: hourOfDay)
+        }
+        return numVisits;
     }
     
     // Time weight: Ratio for day of week
     
     func dayOfWeekRatioForItem(item: String) -> Double {
-        if (numberOfItemOccurrencesAtCurrentWeekday() < 10) {
+        if (numberOfCurrentWeekdayItemVisits() < 10) {
             return 1.0
         }
-        return Double(numberOfOccurrencesAtCurrentWeekdayForItem(item)) / averageNumberOfOccurrencesAcrossAllWeekdaysForItem(item)
+        return Double(numberOfCurrentWeekdayVisitsToItem(item)) / averageNumberOfWeekdayVisitsToItem(item)
     }
     
-    func numberOfItemOccurrencesAtCurrentWeekday() -> Int {
-        let currentWeekday = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitWeekday, fromDate: NSDate()).weekday
-        var numOccurrences = 0
-        
-        for (_, itemOccurrences) in items {
-            for itemOccurrence in itemOccurrences {
-                if didItemOccurAtWeekday(currentWeekday, itemOccurrence: itemOccurrence) {
-                    numOccurrences = numOccurrences + 1
-                }
-            }
+    func numberOfCurrentWeekdayItemVisits() -> Int {
+        var numVisits = 0
+        for (_, itemState) in items {
+            numVisits += itemState.numberOfVisitsToItemsAtCurrentWeekday()
         }
-        return numOccurrences
+        return numVisits
     }
     
-    func numberOfOccurrencesAtCurrentWeekdayForItem(item: String) -> Int {
-        let currentWeekday = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitWeekday, fromDate: NSDate()).weekday
-        return numberOfOccurrencesForItem(item, atWeekday: currentWeekday)
+    func numberOfCurrentWeekdayVisitsToItem(item: String) -> Int {
+        let currentWeekday = NSCalendar.currentCalendar().components(
+            NSCalendarUnit.CalendarUnitWeekday, fromDate: NSDate()).weekday
+        return numberOfVisitsToItem(item, atWeekday: currentWeekday)
     }
     
-    func averageNumberOfOccurrencesAcrossAllWeekdaysForItem(item: String) -> Double {
-        var totalOccurrences = 0
+    func averageNumberOfWeekdayVisitsToItem(item: String) -> Double {
+        var totalVisits = 0
         for weekday in 1...7 {
-            totalOccurrences += numberOfOccurrencesForItem(item, atWeekday: weekday)
+            totalVisits += numberOfVisitsToItem(item, atWeekday: weekday)
         }
-        return Double(totalOccurrences) / 7
+        return Double(totalVisits) / 7
     }
     
-    func numberOfOccurrencesForItem(item: String, atWeekday weekday: Int) -> Int {
-        let calendar = NSCalendar.currentCalendar()
-        
-        return occurrencesForItem(item).filter({ [unowned self] itemOccurrence in
-            return self.didItemOccurAtWeekday(weekday, itemOccurrence: itemOccurrence)
-        }).count
-    }
-    
-    func didItemOccurAtWeekday(weekday: Int, itemOccurrence: ItemOccurrence) -> Bool {
-        let itemDate = NSDate(timeIntervalSince1970: itemOccurrence.time)
-        let itemWeekday = NSCalendar.currentCalendar().components(NSCalendarUnit.CalendarUnitWeekday, fromDate: itemDate).weekday
-        return (itemWeekday == weekday)
+    func numberOfVisitsToItem(item: String, atWeekday weekday: Int) -> Int {
+        var numVisits = 0
+        for (itemID, itemState) in items {
+            numVisits += itemState.numberOfVisitsToItem(itemID, atWeekday: weekday)
+        }
+        return numVisits;
     }
     
     // Helper methods
     
-    func occurrencesForItem(item: String) -> ItemOccurrence[] {
-        var occurrences = ItemOccurrence[]()
-        for (_, itemOccurrences) in items {
-            for itemOccurrence in itemOccurrences {
-                if (itemOccurrence.id == item) {
-                    occurrences += itemOccurrence
-                }
+    func visitsToItem(item: String) -> ItemVisit[] {
+        var visits = ItemVisit[]()
+        for (_, itemState) in items {
+            if let itemVisits = itemState.nextVisits[item] {
+                visits += itemVisits
             }
         }
-        return occurrences
+        return visits
     }
     
     // Convenience methods for persisting and restoring the data structure
     
     func toDictionary() -> Dictionary<String, AnyObject> {
-        var itemsObj = Dictionary<String, Dictionary<String, AnyObject>[]>()
-        for (itemID, itemOccurrences) in items {
-            itemsObj[itemID] = itemOccurrences.map { ["id": $0.id, "time": $0.time] }
+        var itemsObj = Dictionary<String, Dictionary<String, AnyObject>>()
+        for (itemID, itemState) in items {
+            itemsObj[itemID] = itemState.toDictionary()
         }
         
-        let predictionsListObj = predictionList.map { ["id": $0.id, "score": $0.score] }
+        let predictionsListObj = predictionList.map { $0.toDictionary() }
         
         return [
-            "mostRecentItem": mostRecentItemID,
             "items": itemsObj,
-            "predictionList": predictionsListObj
-        ]
+            "predictionList": predictionsListObj,
+            "mostRecentItem": mostRecentItemID,
+            "visitNumber": visitNumber]
     }
     
     func fromDictionary(dict: Dictionary<String, AnyObject>) {
-        if let itemsObj = dict["items"]! as? Dictionary<String, Dictionary<String, AnyObject>[]> {
-            items = Dictionary<String, ItemOccurrence[]>()
-            for (itemID, itemOccurrencesObj) in itemsObj {
-                items[itemID] = itemOccurrencesObj.map { itemOccurrenceObj in
-                    let id: AnyObject = itemOccurrenceObj["id"]!
-                    let time: AnyObject = itemOccurrenceObj["time"]!
-                    return ItemOccurrence(id: id as String, time: time as NSTimeInterval)
-                }
+        if let itemsObj = dict["items"]! as? Dictionary<String, Dictionary<String, AnyObject>> {
+            items = Dictionary<String, ItemState>()
+            for (itemID, itemStateObj) in itemsObj {
+                items[itemID] = ItemState(data: itemStateObj)
             }
         }
         
         if let predictionListObj = dict["predictionList"]! as? Dictionary<String, AnyObject>[] {
-            predictionList = predictionListObj.map { scoredItemObj in
-                let id: AnyObject = scoredItemObj["id"]!
-                let score: AnyObject = scoredItemObj["score"]!
-                return ScoredItem(id: id as String, score: score as Double)
-            }
+            predictionList = predictionListObj.map { ScoredItem(data: $0) }
         }
         
         mostRecentItem = dict["mostRecentItem"]! as? String
+        
+        if let visitNumberValue = dict["visitNumber"]! as? Int {
+            visitNumber = visitNumberValue
+        }
     }
     
-    // Debugging methods
+    // Structs
+    
+    struct ItemVisit {
+        var id: String
+        var hour: Int
+        var weekday: Int
+        var visitNumber: Int
+        
+        init(id: String, hour: Int, weekday: Int, visitNumber: Int) {
+            self.id = id
+            self.hour = hour
+            self.weekday = weekday
+            self.visitNumber = visitNumber
+        }
+        
+        init(data: Dictionary<String, AnyObject>) {
+            let idValue: AnyObject = data["id"]!
+            let hourValue: AnyObject = data["hour"]!
+            let weekdayValue: AnyObject = data["weekday"]!
+            let visitNumberValue: AnyObject = data["visitNumber"]!
+            
+            self.id = idValue as String
+            self.hour = hourValue as Int
+            self.weekday = weekdayValue as Int
+            self.visitNumber = visitNumberValue as Int
+        }
+        
+        func toDictionary() -> Dictionary<String, AnyObject> {
+            return [
+                "id": id,
+                "hour": hour,
+                "weekday": weekday,
+                "visitNumber": visitNumber]
+        }
+    }
+    
+    struct ItemState {
+        var numberOfVisits: Int = 0
+        var nextVisits = Dictionary<String, ItemVisit[]>()
+        
+        init() {}
+        
+        init(numberOfVisits: Int, nextVisits: Dictionary<String, ItemVisit[]>) {
+            self.numberOfVisits = numberOfVisits
+            self.nextVisits = nextVisits
+        }
+        
+        init(data: Dictionary<String, AnyObject>) {
+            let numberOfVisitsValue: AnyObject = data["numberOfVisits"]!
+            
+            let nextVisitsObj = data["nextVisits"]! as? Dictionary<String,  Dictionary<String, AnyObject>[]>
+            var nextVisitsValue = Dictionary<String, ItemVisit[]>()
+            for (itemID, itemVisitsObj) in nextVisitsObj! {
+                nextVisitsValue[itemID] = itemVisitsObj.map { ItemVisit(data: $0) }
+            }
+            
+            self.numberOfVisits = numberOfVisitsValue as Int
+            self.nextVisits = nextVisitsValue
+        }
+        
+        mutating func increaseVisits() {
+            numberOfVisits += 1
+        }
+        
+        mutating func addVisitToItem(item: String, visitNumber: Int) {
+            var nextVisitsToItem = nextVisits[item] ? nextVisits[item]! : ItemVisit[]()
+            let calendarComponents = NSCalendar.currentCalendar().components(
+                NSCalendarUnit.CalendarUnitHour | NSCalendarUnit.CalendarUnitWeekday,
+                fromDate: NSDate())
+            
+            nextVisitsToItem += ItemVisit(
+                id: item,
+                hour: calendarComponents.hour,
+                weekday: calendarComponents.weekday,
+                visitNumber: visitNumber)
+            
+            nextVisits[item] = nextVisitsToItem
+        }
+        
+        mutating func removeVisitsToItem(item: String) {
+            nextVisits.removeValueForKey(item)
+        }
+        
+        func numberOfTransitionsToItem(item: String) -> Int {
+            let num = nextVisits[item]?.count
+            return num ? num! : 0
+        }
+        
+        func numberOfVisitsToItemsInCurrentHourSlot() -> Int {
+            let currentHour = NSCalendar.currentCalendar().components(
+                NSCalendarUnit.CalendarUnitHour, fromDate: NSDate()).hour
+            var numVisits = 0
+            
+            for (itemID, _) in nextVisits {
+                numVisits += numberOfVisitsToItem(itemID, inTimeSlotAtHour: currentHour)
+            }
+            return numVisits
+        }
+        
+        func numberOfVisitsToItem(item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
+            var numVisits = 0
+            
+            if let itemVisits = nextVisits[item] {
+                for itemVisit in itemVisits {
+                    if (itemVisit.hour >= (hourOfDay - 1)) && (itemVisit.hour <= (hourOfDay + 1)) {
+                        numVisits += 1
+                    }
+                }
+            }
+            return numVisits
+        }
+        
+        func numberOfVisitsToItemsAtCurrentWeekday() -> Int {
+            let currentWeekday = NSCalendar.currentCalendar().components(
+                NSCalendarUnit.CalendarUnitHour, fromDate: NSDate()).weekday
+            var numVisits = 0
+            
+            for (itemID, _) in nextVisits {
+                numVisits += numberOfVisitsToItem(itemID, atWeekday: currentWeekday)
+            }
+            return numVisits
+        }
+        
+        func numberOfVisitsToItem(item: String, atWeekday weekday: Int) -> Int {
+            var numVisits = 0
+            
+            if let itemVisits = nextVisits[item] {
+                for itemVisit in itemVisits {
+                    if itemVisit.weekday == weekday {
+                        numVisits += 1
+                    }
+                }
+            }
+            return numVisits
+        }
+        
+        func toDictionary() -> Dictionary<String, AnyObject> {
+            var nextVisitsObj = Dictionary<String,  Dictionary<String, AnyObject>[]>()
+            for (itemID, itemVisits) in nextVisits {
+                nextVisitsObj[itemID] = itemVisits.map { $0.toDictionary() }
+            }
+            
+            return [
+                "nextVisits": nextVisitsObj,
+                "numberOfVisits": numberOfVisits]
+        }
+        
+        func markovDescription() -> String {
+            var items = String[]()
+            for (itemID, _) in nextVisits {
+                let count = nextVisits[itemID]?.count
+                items += "\(itemID) (\(String(count!)))"
+            }
+            return join(", ", items)
+        }
+    }
+    
+    struct ScoredItem {
+        var id: String
+        var score: Double
+        
+        init(id: String, score: Double) {
+            self.id = id
+            self.score = score
+        }
+        
+        init(data: Dictionary<String, AnyObject>) {
+            let idValue: AnyObject = data["id"]!
+            let scoreValue: AnyObject = data["score"]!
+            
+            self.id = idValue as String
+            self.score = scoreValue as Double
+        }
+        
+        func toDictionary() -> Dictionary<String, AnyObject> {
+            return [
+                "id": id,
+                "score": score]
+        }
+    }
+    
+    // Debugging
     
     func markovDescription() -> String {
         var str = ""
-        for (item, itemOccurrences) in items {
-            let nextItemsStr = join(", ", itemOccurrences.map { $0.id })
-            str += "\(item) > \(nextItemsStr)\n"
+        for (item, itemState) in items {
+            str += "\(item) > \(itemState.markovDescription())\n"
         }
         return str
     }
