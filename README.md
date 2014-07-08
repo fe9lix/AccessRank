@@ -17,6 +17,8 @@ Here's the full reference for the [paper](http://www.cosc.canterbury.ac.nz/andre
 
 > Stephen Fitchett and Andy Cockburn. 2012. AccessRank: predicting what users will do next. In Proceedings of the SIGCHI Conference on Human Factors in Computing Systems (CHI '12). ACM, New York, NY, USA, 2239-2242.
 
+Thanks to Stephen Fitchett for answering my questions and giving feedback!
+
 ### Installation
 
 Just copy the folder `src/AccessRank` into your project. 

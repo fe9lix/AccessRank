@@ -124,36 +124,22 @@ class AccessRank {
     
     func sortPredictionList() {
         predictionList.sort { [unowned self] A, B in
-            var itemA = self.items[A.id]!
-            var itemB = self.items[B.id]!
+            let itemA = self.items[A.id]!
+            let itemB = self.items[B.id]!
+            var scoreA = A.score
+            var scoreB = B.score
             
-            if (itemA.rank < itemB.rank) && (B.score > A.score) {
-                let stableScoreA = A.score + self.listStabilityValue.d
-                if B.score > stableScoreA {
-                    return false
-                } else {
-                    if B.score == stableScoreA {
-                        return itemA.timeOfLastVisit > itemB.timeOfLastVisit
-                    } else {
-                        return true
-                    }
-                }
+            if (itemA.rank < itemB.rank) && (scoreB > scoreA) {
+                scoreA += self.listStabilityValue.d
+            } else if (itemA.rank > itemB.rank) && (scoreB < scoreA) {
+                scoreB += self.listStabilityValue.d
             }
             
-            if (itemA.rank > itemB.rank) && (B.score < A.score) {
-                let stableScoreB = B.score + self.listStabilityValue.d
-                if A.score > stableScoreB {
-                    return true
-                } else {
-                    if A.score == stableScoreB {
-                        return itemA.timeOfLastVisit > itemB.timeOfLastVisit
-                    } else {
-                        return false
-                    }
-                }
+            if scoreA == scoreB {
+                return itemA.timeOfLastVisit > itemB.timeOfLastVisit
+            } else {
+                return scoreA > scoreB
             }
-            
-            return A.score > B.score
         }
     }
     
