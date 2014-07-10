@@ -12,8 +12,8 @@
 		DCC7E4671954C9CF0061AD14 /* AccessRank.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7E4611954C9CF0061AD14 /* AccessRank.swift */; };
 		DCC7E4681954C9CF0061AD14 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7E4631954C9CF0061AD14 /* AppDelegate.swift */; };
 		DCC7E4691954C9CF0061AD14 /* Countries.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7E4641954C9CF0061AD14 /* Countries.swift */; };
-		DCC7E46A1954C9CF0061AD14 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7E4651954C9CF0061AD14 /* ViewController.swift */; };
-		DCC7E46B1954C9CF0061AD14 /* ViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DCC7E4661954C9CF0061AD14 /* ViewController.xib */; };
+		DCC7E46A1954C9CF0061AD14 /* AccessRankViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCC7E4651954C9CF0061AD14 /* AccessRankViewController.swift */; };
+		DCC7E46B1954C9CF0061AD14 /* AccessRankViewController.xib in Resources */ = {isa = PBXBuildFile; fileRef = DCC7E4661954C9CF0061AD14 /* AccessRankViewController.xib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,8 +36,8 @@
 		DCC7E4611954C9CF0061AD14 /* AccessRank.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AccessRank.swift; sourceTree = "<group>"; };
 		DCC7E4631954C9CF0061AD14 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DCC7E4641954C9CF0061AD14 /* Countries.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Countries.swift; sourceTree = "<group>"; };
-		DCC7E4651954C9CF0061AD14 /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
-		DCC7E4661954C9CF0061AD14 /* ViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = ViewController.xib; sourceTree = "<group>"; };
+		DCC7E4651954C9CF0061AD14 /* AccessRankViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AccessRankViewController.swift; sourceTree = "<group>"; };
+		DCC7E4661954C9CF0061AD14 /* AccessRankViewController.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = AccessRankViewController.xib; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -133,8 +133,8 @@
 			children = (
 				DCC7E4631954C9CF0061AD14 /* AppDelegate.swift */,
 				DCC7E4641954C9CF0061AD14 /* Countries.swift */,
-				DCC7E4651954C9CF0061AD14 /* ViewController.swift */,
-				DCC7E4661954C9CF0061AD14 /* ViewController.xib */,
+				DCC7E4651954C9CF0061AD14 /* AccessRankViewController.swift */,
+				DCC7E4661954C9CF0061AD14 /* AccessRankViewController.xib */,
 			);
 			path = app;
 			sourceTree = "<group>";
@@ -219,7 +219,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				DCC7E46B1954C9CF0061AD14 /* ViewController.xib in Resources */,
+				DCC7E46B1954C9CF0061AD14 /* AccessRankViewController.xib in Resources */,
 				DC3473BC194E3DBC000839EF /* Images.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -240,7 +240,7 @@
 			files = (
 				DCC7E4681954C9CF0061AD14 /* AppDelegate.swift in Sources */,
 				DCC7E4691954C9CF0061AD14 /* Countries.swift in Sources */,
-				DCC7E46A1954C9CF0061AD14 /* ViewController.swift in Sources */,
+				DCC7E46A1954C9CF0061AD14 /* AccessRankViewController.swift in Sources */,
 				DCC7E4671954C9CF0061AD14 /* AccessRank.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

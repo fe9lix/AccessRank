@@ -25,7 +25,7 @@ Just copy the folder `src/AccessRank` into your project.
 
 ### Demo Project
 
-The demo project shows a simple usage example: It contains a table view with country names and a text view with predictions. When you select a country name, the item is added to *AccessRank*, and the list of predictions for which item you might select next is updated.  
+The demo project shows a simple usage example: It contains a table view with country names and a text view with predictions. When you select a country name, the item is added to *AccessRank*, and the list of predictions for which item you might select next is updated. When the app is moved to the background state, an *AccessRank* snapshot is saved to the user defaults (also see the section on persistence).
 *Note*: The example doesn't use auto-layout due to some obscure bugs in Xcode 6 beta 2...
 
 ### Usage
@@ -49,12 +49,20 @@ The only feature you can currently configure is turning *time weighting* on and 
 accessRank.useTimeWeighting = false
 ```
 
-#### Adding Items
+#### Visiting Items
 
-Adding items is as simple as calling the `mostRecentItem` property setter with an item id. You should set this property whenever a user selects an item in the list. The setter is implemented as an `optional` in Swift so that you can set it to `nil` when the user deselects an item.
+Visiting items is as simple as calling the method `visitItem` with an item id. You should call this method whenever a user selects an item in the list (i.e., visits or uses the item). The parameter is an `optional` so that you can pass `nil` when the user deselects an item.
 
 ```swift
-accessRank.mostRecentItem = "A"
+accessRank.visitItem("A")
+```
+
+#### Most Recent Item
+
+Calling the property getter `mostRecentItem` returns the most recently visited item id as an `optional`.
+
+```swift
+println("mostRecentItem: \(accessRank.mostRecentItem)")
 ```
 
 #### Removing Items

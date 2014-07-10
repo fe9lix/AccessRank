@@ -1,6 +1,6 @@
 import UIKit
 
-class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AccessRankDelegate {
+class AccessRankViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AccessRankDelegate {
     
     @IBOutlet var tableView : UITableView
     @IBOutlet var predictionsTextView: UITextView
@@ -46,8 +46,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     func tableView(tableView: UITableView!, didSelectRowAtIndexPath indexPath: NSIndexPath!) {
         if let code = Countries.all[indexPath.row]["code"] {
-            accessRank.mostRecentItem = code
-            saveToUserDefaults()
+            accessRank.visitItem(code)
         }
     }
     
@@ -62,7 +61,7 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
         predictionsTextView.text = join("\n", predictedCountries)
     }
     
-    // Persistence
+    // Persistence (called in AppDelegate)
     
     func saveToUserDefaults() {
         NSUserDefaults.standardUserDefaults().setObject(accessRank.toDictionary(), forKey: accessRankuserDefaultsKey)

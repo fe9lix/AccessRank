@@ -4,13 +4,15 @@ import UIKit
 class AppDelegate: UIResponder, UIApplicationDelegate {
                             
     var window: UIWindow?
+    var accessRankViewController: AccessRankViewController?
 
     func application(application: UIApplication, didFinishLaunchingWithOptions launchOptions: NSDictionary?) -> Bool {
-        window = UIWindow(frame:UIScreen.mainScreen().bounds);
+        window = UIWindow(frame:UIScreen.mainScreen().bounds)
         
         if let win = window {
-            win.rootViewController = ViewController(nibName: nil, bundle: nil)
-            win.makeKeyAndVisible();
+            accessRankViewController = AccessRankViewController(nibName: nil, bundle: nil)
+            win.rootViewController = accessRankViewController
+            win.makeKeyAndVisible()
             return true
         }
         
@@ -23,6 +25,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidEnterBackground(application: UIApplication) {
+        accessRankViewController?.saveToUserDefaults()
         // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later.
         // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
     }
@@ -39,6 +42,4 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
-
 }
-

@@ -16,66 +16,74 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
     
     func testLowListStability() {
         let accessRankLow = AccessRank(listStability: AccessRank.ListStability.Low)
-        accessRankLow.mostRecentItem = "A"
-        accessRankLow.mostRecentItem = "B"
-        accessRankLow.mostRecentItem = "C"
-        accessRankLow.mostRecentItem = "A"
-        accessRankLow.mostRecentItem = "B"
+        accessRankLow.visitItem("A")
+        accessRankLow.visitItem("B")
+        accessRankLow.visitItem("C")
+        accessRankLow.visitItem("A")
+        accessRankLow.visitItem("B")
         
         XCTAssertEqual(accessRankLow.predictions[0], "C")
     }
     
     func testMediumListStability() {
-        accessRank.mostRecentItem = "A"
-        accessRank.mostRecentItem = "B"
-        accessRank.mostRecentItem = "C"
-        accessRank.mostRecentItem = "A"
-        accessRank.mostRecentItem = "B"
+        accessRank.visitItem("A")
+        accessRank.visitItem("B")
+        accessRank.visitItem("C")
+        accessRank.visitItem("A")
+        accessRank.visitItem("B")
         
         XCTAssertEqual(accessRank.predictions[0], "C")
     }
     
     func testHighListStability() {
         let accessRankHigh = AccessRank(listStability: AccessRank.ListStability.High)
-        accessRankHigh.mostRecentItem = "A"
-        accessRankHigh.mostRecentItem = "B"
-        accessRankHigh.mostRecentItem = "C"
-        accessRankHigh.mostRecentItem = "A"
-        accessRankHigh.mostRecentItem = "B"
+        accessRankHigh.visitItem("A")
+        accessRankHigh.visitItem("B")
+        accessRankHigh.visitItem("C")
+        accessRankHigh.visitItem("A")
+        accessRankHigh.visitItem("B")
         
         XCTAssertEqual(accessRankHigh.predictions[0], "A")
     }
     
     func testNumberOfPredictions() {
-        accessRank.mostRecentItem = "A"
-        accessRank.mostRecentItem = "B"
-        accessRank.mostRecentItem = "C"
+        accessRank.visitItem("A")
+        accessRank.visitItem("B")
+        accessRank.visitItem("C")
         
         XCTAssertEqual(accessRank.predictions.count, 2)
     }
     
-    func testPredictionsShouldNotContainInitialItem() {
-        accessRank.mostRecentItem = "A"
-        accessRank.mostRecentItem = "B"
-        accessRank.mostRecentItem = nil
-        accessRank.mostRecentItem = "C"
+    func testMostRecentItem() {
+        accessRank.visitItem("A")
+        accessRank.visitItem("B")
+        accessRank.visitItem("C")
         
-        XCTAssertFalse(contains(accessRank.predictions, accessRank.initialItemID))
+        XCTAssertEqual(accessRank.mostRecentItem!, "C")
+    }
+    
+    func testPredictionsShouldNotContainInitialItem() {
+        accessRank.visitItem("A")
+        accessRank.visitItem("B")
+        accessRank.visitItem(nil)
+        accessRank.visitItem("C")
+        
+        XCTAssertFalse(contains(accessRank.predictions, accessRank.initialItem))
     }
  
     func testPredictionsShouldNotContainMostRecentItem() {
-        accessRank.mostRecentItem = "A"
-        accessRank.mostRecentItem = "B"
-        accessRank.mostRecentItem = "C"
+        accessRank.visitItem("A")
+        accessRank.visitItem("B")
+        accessRank.visitItem("C")
         
         XCTAssertFalse(contains(accessRank.predictions, accessRank.mostRecentItem!))
     }
     
     func testRemoveItems() {
-        accessRank.mostRecentItem = "A"
-        accessRank.mostRecentItem = "B"
-        accessRank.mostRecentItem = "C"
-        accessRank.mostRecentItem = "A"
+        accessRank.visitItem("A")
+        accessRank.visitItem("B")
+        accessRank.visitItem("C")
+        accessRank.visitItem("A")
         
         accessRank.removeItems(["C", "A"])
         
@@ -85,9 +93,9 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
     }
     
     func testPersistence() {
-        accessRank.mostRecentItem = "A"
-        accessRank.mostRecentItem = "B"
-        accessRank.mostRecentItem = "C"
+        accessRank.visitItem("A")
+        accessRank.visitItem("B")
+        accessRank.visitItem("C")
         
         let dataToPersist = accessRank.toDictionary()
         
@@ -101,12 +109,12 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
     }
     
     func testDelegate() {
-        accessRank.mostRecentItem = "A"
+        accessRank.visitItem("A")
         
-        delegateExpectation = expectationWithDescription("update predictions");
+        delegateExpectation = expectationWithDescription("update predictions")
         
         accessRank.delegate = self
-        accessRank.mostRecentItem = "B"
+        accessRank.visitItem("B")
         
         waitForExpectationsWithTimeout(5.0, handler: nil)
     }
