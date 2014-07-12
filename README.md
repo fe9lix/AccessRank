@@ -25,12 +25,12 @@ Just copy the folder `src/AccessRank` into your project.
 
 ### Demo Project
 
-The demo project shows a simple usage example: It contains a table view with country names and a text view with predictions. When you select a country name, the item is added to *AccessRank*, and the list of predictions for which item you might select next is updated. When the app is moved to the background state, an *AccessRank* snapshot is saved to the user defaults (also see the section on persistence).
-*Note*: The example doesn't use auto-layout due to some obscure bugs in Xcode 6 beta 2...
+The demo project shows a simple usage example: It contains a table view with item names and a text view with predictions. When you select an item, it is added to *AccessRank*, and the list of predictions for which item you might select next is updated. When the app is moved to the background state, an *AccessRank* snapshot is saved to the user defaults (also see the section on persistence).
+*Note*: The example doesn't use auto-layout due to some obscure bugs in Xcode 6 beta 3.
 
 ### Usage
 
-Due to the Swift language currently lacking access modifiers, basically everything in AccessRank.swift is *public*. The properties and methods which are supposed to be used by clients are documented here.
+Due to the Swift language currently lacking access modifiers, basically everything in AccessRank.swift is *public* (This will be changed as soon as Swift includes access modifiers in a later release.). The properties and methods which are supposed to be used by clients are documented here.
 
 #### Initializing
 

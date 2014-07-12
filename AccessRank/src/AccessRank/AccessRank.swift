@@ -27,7 +27,7 @@ class AccessRank {
     }
     var useTimeWeighting = true
     
-    var items = Dictionary<String, ItemState>()
+    var items = [String: ItemState]()
     var visitNumber = 0
     
     var initialItem = "<access_rank_nil>"
@@ -36,14 +36,14 @@ class AccessRank {
         return mostRecentItemID == initialItem ? nil : mostRecentItemID
     }
     
-    var predictionList = ScoredItem[]()
-    var predictions: String[] {
+    var predictionList = [ScoredItem]()
+    var predictions: [String] {
         return predictionList.map { $0.id }.filter { [unowned self] item in
            item != self.mostRecentItemID
         }
     }
     
-    init(listStability: ListStability = .Medium, data: Dictionary<String, AnyObject>? = nil) {
+    init(listStability: ListStability = .Medium, data: [String: AnyObject]? = nil) {
         self.listStability = listStability
         self.mostRecentItemID = initialItem
         if (data) {
@@ -54,7 +54,7 @@ class AccessRank {
     // Item updating and removal
     
     func visitItem(item: String?) {
-        if (!item) {
+        if !item {
             mostRecentItemID = initialItem
             return
         }
@@ -79,7 +79,7 @@ class AccessRank {
         return items[item] ? items[item]! : ItemState()
     }
     
-    func removeItems(itemsToRemove: String[]) {
+    func removeItems(itemsToRemove: [String]) {
         for item in itemsToRemove {
             removeItem(item)
         }
@@ -292,8 +292,8 @@ class AccessRank {
     
     // Convenience methods for persisting and restoring the data structure
     
-    func toDictionary() -> Dictionary<String, AnyObject> {
-        var itemsObj = Dictionary<String, Dictionary<String, AnyObject>>()
+    func toDictionary() -> [String: AnyObject] {
+        var itemsObj = [String: [String: AnyObject]]()
         for (itemID, itemState) in items {
             itemsObj[itemID] = itemState.toDictionary()
         }
@@ -307,15 +307,15 @@ class AccessRank {
             "mostRecentItemID": mostRecentItemID]
     }
     
-    func fromDictionary(dict: Dictionary<String, AnyObject>) {
-        if let itemsObj = dict["items"]! as? Dictionary<String, Dictionary<String, AnyObject>> {
-            items = Dictionary<String, ItemState>()
+    func fromDictionary(dict: [String: AnyObject]) {
+        if let itemsObj = dict["items"]! as? [String: [String: AnyObject]] {
+            items = [String: ItemState]()
             for (itemID, itemStateObj) in itemsObj {
                 items[itemID] = ItemState(data: itemStateObj)
             }
         }
         
-        if let predictionListObj = dict["predictionList"]! as? Dictionary<String, AnyObject>[] {
+        if let predictionListObj = dict["predictionList"]! as? [[String: AnyObject]] {
             predictionList = predictionListObj.map { ScoredItem(data: $0) }
         }
         
@@ -341,7 +341,7 @@ class AccessRank {
             self.weekday = weekday
         }
         
-        init(data: Dictionary<String, AnyObject>) {
+        init(data: [String: AnyObject]) {
             let idValue: AnyObject = data["id"]!
             let hourValue: AnyObject = data["hour"]!
             let weekdayValue: AnyObject = data["weekday"]!
@@ -351,7 +351,7 @@ class AccessRank {
             self.weekday = weekdayValue as Int
         }
         
-        func toDictionary() -> Dictionary<String, AnyObject> {
+        func toDictionary() -> [String: AnyObject] {
             return [
                 "id": id,
                 "hour": hour,
@@ -360,7 +360,7 @@ class AccessRank {
     }
     
     struct ItemState {
-        var nextVisits = Dictionary<String, ItemVisit[]>()
+        var nextVisits = [String: [ItemVisit]]()
         var visitNumber = 0
         var numberOfVisits = 0
         var timeOfLastVisit: NSTimeInterval = 0
@@ -369,18 +369,18 @@ class AccessRank {
         
         init() {}
         
-        init(data: Dictionary<String, AnyObject>) {
-            let numberOfVisitsValue: AnyObject = data["numberOfVisits"]!
-            let timeOfLastVisitValue: AnyObject = data["timeOfLastVisit"]!
-            let rankValue: AnyObject = data["rank"]!
-            let crfWeightValue: AnyObject = data["crfWeight"]!
-            let visitNumberValue: AnyObject = data["visitNumber"]!
-            
-            let nextVisitsObj = data["nextVisits"]! as? Dictionary<String,  Dictionary<String, AnyObject>[]>
-            var nextVisitsValue = Dictionary<String, ItemVisit[]>()
+        init(data: [String: AnyObject]) {
+            let nextVisitsObj = data["nextVisits"]! as? [String: [[String: AnyObject]]]
+            var nextVisitsValue = [String: [ItemVisit]]()
             for (itemID, itemVisitsObj) in nextVisitsObj! {
                 nextVisitsValue[itemID] = itemVisitsObj.map { ItemVisit(data: $0) }
             }
+            
+            let visitNumberValue: AnyObject = data["visitNumber"]!
+            let numberOfVisitsValue: AnyObject = data["numberOfVisits"]!
+            let timeOfLastVisitValue: AnyObject = data["timeOfLastVisit"]!
+            let crfWeightValue: AnyObject = data["crfWeight"]!
+            let rankValue: AnyObject = data["rank"]!
             
             self.nextVisits = nextVisitsValue
             self.visitNumber = visitNumberValue as Int
@@ -395,7 +395,7 @@ class AccessRank {
                 NSCalendarUnit.CalendarUnitHour | NSCalendarUnit.CalendarUnitWeekday,
                 fromDate: NSDate())
             
-            var nextVisitsToItem = nextVisits[item] ? nextVisits[item]! : ItemVisit[]()
+            var nextVisitsToItem = nextVisits[item] ? nextVisits[item]! : [ItemVisit]()
             nextVisitsToItem += ItemVisit(
                 id: item,
                 hour: calendarComponents.hour,
@@ -474,8 +474,8 @@ class AccessRank {
             return numVisits
         }
         
-        func toDictionary() -> Dictionary<String, AnyObject> {
-            var nextVisitsObj = Dictionary<String,  Dictionary<String, AnyObject>[]>()
+        func toDictionary() -> [String: AnyObject] {
+            var nextVisitsObj = [String: [[String: AnyObject]]]()
             for (itemID, itemVisits) in nextVisits {
                 nextVisitsObj[itemID] = itemVisits.map { $0.toDictionary() }
             }
@@ -490,7 +490,7 @@ class AccessRank {
         }
         
         func markovDescription() -> String {
-            var items = String[]()
+            var items = [String]()
             for (itemID, _) in nextVisits {
                 let count = nextVisits[itemID]?.count
                 items += "\(itemID) (\(String(count!)))"
@@ -508,7 +508,7 @@ class AccessRank {
             self.score = score
         }
         
-        init(data: Dictionary<String, AnyObject>) {
+        init(data: [String: AnyObject]) {
             let idValue: AnyObject = data["id"]!
             let scoreValue: AnyObject = data["score"]!
             
@@ -516,7 +516,7 @@ class AccessRank {
             self.score = scoreValue as Double
         }
         
-        func toDictionary() -> Dictionary<String, AnyObject> {
+        func toDictionary() -> [String: AnyObject] {
             return [
                 "id": id,
                 "score": score]

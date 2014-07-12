@@ -5,7 +5,7 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
     @IBOutlet var tableView : UITableView
     @IBOutlet var predictionsTextView: UITextView
     
-    let countryCellIdentifier = "CountryCellIdentifier"
+    let itemCellIdentifier = "ItemCellIdentifier"
     let accessRankuserDefaultsKey = "accessRank"
     
     var accessRank: AccessRank
@@ -14,7 +14,7 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
         let data: AnyObject? = NSUserDefaults.standardUserDefaults().objectForKey(accessRankuserDefaultsKey)
         accessRank = AccessRank(
             listStability: AccessRank.ListStability.Medium,
-            data: data as? Dictionary<String, AnyObject>)
+            data: data as? [String: AnyObject])
         
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
         
@@ -31,22 +31,22 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
     // Table view
     
     func setupTableView() {
-        tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: countryCellIdentifier)
+        tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: itemCellIdentifier)
     }
     
     func tableView(tableView: UITableView!, numberOfRowsInSection section: Int) -> Int {
-        return Countries.all.count
+        return Items.all.count
     }
     
     func tableView(tableView: UITableView!, cellForRowAtIndexPath indexPath: NSIndexPath!) -> UITableViewCell! {
-        let cell = tableView.dequeueReusableCellWithIdentifier(countryCellIdentifier, forIndexPath: indexPath) as UITableViewCell
-        cell.textLabel.text = Countries.all[indexPath.row]["name"]
+        let cell = tableView.dequeueReusableCellWithIdentifier(itemCellIdentifier, forIndexPath: indexPath) as UITableViewCell
+        cell.textLabel.text = Items.all[indexPath.row]["name"]
         return cell
     }
     
     func tableView(tableView: UITableView!, didSelectRowAtIndexPath indexPath: NSIndexPath!) {
-        if let code = Countries.all[indexPath.row]["code"] {
-            accessRank.visitItem(code)
+        if let id = Items.all[indexPath.row]["id"] {
+            accessRank.visitItem(id)
         }
     }
     
@@ -57,8 +57,8 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
     }
     
     func updatePredictionList() {
-        let predictedCountries: String[] = accessRank.predictions.map { Countries.byCode[$0]! }
-        predictionsTextView.text = join("\n", predictedCountries)
+        let predictedItems = accessRank.predictions.map { Items.byID[$0]! }
+        predictionsTextView.text = join("\n", predictedItems)
     }
     
     // Persistence (called in AppDelegate)
