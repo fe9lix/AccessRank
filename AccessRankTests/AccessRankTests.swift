@@ -103,9 +103,8 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
             listStability: AccessRank.ListStability.Medium,
             data: dataToPersist)
         
-        XCTAssertEqualObjects(restoredAccessRank.mostRecentItem, accessRank.mostRecentItem)
-        XCTAssertEqualObjects(restoredAccessRank.visitNumber, accessRank.visitNumber)
-        XCTAssertEqualObjects(restoredAccessRank.predictions, accessRank.predictions)
+        XCTAssertTrue(restoredAccessRank.mostRecentItem == accessRank.mostRecentItem)
+        XCTAssertTrue(restoredAccessRank.predictions == accessRank.predictions)
     }
     
     func testDelegate() {

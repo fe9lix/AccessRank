@@ -1,8 +1,8 @@
 import Foundation
 
-struct Items {
+public struct Items {
 
-    static let all: [[String: String]] = {
+    public static let all: [[String: String]] = {
         var items = [[String: String]]()
         for index in 65...90 {
             let letter = String(UnicodeScalar(index))
@@ -13,7 +13,7 @@ struct Items {
         return items
     }()
     
-    static let byID: [String: String] = {
+    public static let byID: [String: String] = {
         var itemsByID = [String: String]()
         for item in all {
             itemsByID[item["id"]!] = item["name"]

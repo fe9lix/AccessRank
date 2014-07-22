@@ -3,19 +3,19 @@
 
 import Foundation
 
-protocol AccessRankDelegate {
+public protocol AccessRankDelegate {
     func accessRankDidUpdatePredictions(accessRank: AccessRank)
 }
 
-class AccessRank {
+public class AccessRank {
 
-    var delegate: AccessRankDelegate?
+    public var delegate: AccessRankDelegate?
     
-    enum ListStability {
+    public enum ListStability {
         case Low, Medium, High
     }
-    var listStability: ListStability
-    var listStabilityValue: (l: Double, d: Double) {
+    public var listStability: ListStability
+    private var listStabilityValue: (l: Double, d: Double) {
         switch listStability {
         case .Low:
             return (l: 1.65, d: 0.0)
@@ -25,25 +25,25 @@ class AccessRank {
             return (l: 2.50, d: 0.5)
         }
     }
-    var useTimeWeighting = true
+    public var useTimeWeighting = true
     
-    var items = [String: ItemState]()
-    var visitNumber = 0
+    private var items = [String: ItemState]()
+    private var visitNumber = 0
     
-    var initialItem = "<access_rank_nil>"
-    var mostRecentItemID: String
-    var mostRecentItem: String? {
+    public var initialItem = "<access_rank_nil>"
+    private var mostRecentItemID: String
+    public var mostRecentItem: String? {
         return mostRecentItemID == initialItem ? nil : mostRecentItemID
     }
     
-    var predictionList = [ScoredItem]()
-    var predictions: [String] {
+    private var predictionList = [ScoredItem]()
+    public var predictions: [String] {
         return predictionList.map { $0.id }.filter { [unowned self] item in
            item != self.mostRecentItemID
         }
     }
     
-    init(listStability: ListStability = .Medium, data: [String: AnyObject]? = nil) {
+    public init(listStability: ListStability = .Medium, data: [String: AnyObject]? = nil) {
         self.listStability = listStability
         self.mostRecentItemID = initialItem
         if (data) {
@@ -51,9 +51,9 @@ class AccessRank {
         }
     }
     
-    // Item updating and removal
+    //MARK: Item updating and removal
     
-    func visitItem(item: String?) {
+    public func visitItem(item: String?) {
         if !item {
             mostRecentItemID = initialItem
             return
@@ -75,11 +75,11 @@ class AccessRank {
         updatePredictionList()
     }
     
-    func stateForItem(item: String) -> ItemState {
+    private func stateForItem(item: String) -> ItemState {
         return items[item] ? items[item]! : ItemState()
     }
     
-    func removeItems(itemsToRemove: [String]) {
+    public func removeItems(itemsToRemove: [String]) {
         for item in itemsToRemove {
             removeItem(item)
         }
@@ -91,7 +91,7 @@ class AccessRank {
         updatePredictionList()
     }
     
-    func removeItem(item: String) {
+    private func removeItem(item: String) {
         for (itemID, var itemState) in items {
             if itemID == item {
                 items.removeValueForKey(itemID)
@@ -107,9 +107,9 @@ class AccessRank {
         }
     }
     
-    // Prediction list
+    //MARK: Prediction list
     
-    func updatePredictionList()  {
+    private func updatePredictionList()  {
         updateScoredItems()
         sortPredictionList()
         updateItemRanks()
@@ -118,7 +118,7 @@ class AccessRank {
         delegate?.accessRankDidUpdatePredictions(self)
     }
     
-    func updateScoredItems() {
+    private func updateScoredItems() {
         for (index, scoredItem) in enumerate(predictionList) {
             predictionList[index] = ScoredItem(
                 id: scoredItem.id,
@@ -126,7 +126,7 @@ class AccessRank {
         }
     }
     
-    func sortPredictionList() {
+    private func sortPredictionList() {
         predictionList.sort { [unowned self] A, B in
             let itemA = self.items[A.id]!
             let itemB = self.items[B.id]!
@@ -147,7 +147,7 @@ class AccessRank {
         }
     }
     
-    func updateItemRanks() {
+    private func updateItemRanks() {
         for (index, scoredItem) in enumerate(predictionList) {
             var item = items[scoredItem.id]!
             item.updateRank(index)
@@ -155,16 +155,16 @@ class AccessRank {
         }
     }
     
-    func addItemsToPredictionList() {
+    private func addItemsToPredictionList() {
         let item = items[mostRecentItemID]!
         if (mostRecentItemID != initialItem) && item.numberOfVisits == 1 {
             predictionList += ScoredItem(id: mostRecentItemID, score: 0.0)
         }
     }
     
-    // Combined score
+    //MARK: Combined score
     
-    func scoreForItem(item: String) -> Double {
+    private func scoreForItem(item: String) -> Double {
         let l = listStabilityValue.l
         let wm = markovWeightForItem(item)
         let wcrf = crfWeightForItem(item)
@@ -173,50 +173,50 @@ class AccessRank {
         return pow(wm, l) * pow(wcrf, 1 / l) * wt
     }
     
-    // Markov weight
+    //MARK: Markov weight
     
-    func markovWeightForItem(item: String) -> Double {
+    private func markovWeightForItem(item: String) -> Double {
         let xn = Double(numberOfVisitsForMostRecentItem())
         let x = Double(numberOfTransitionsFromMostRecentItemToItem(item))
         
         return (x + 1) / (xn + 1)
     }
     
-    func numberOfVisitsForMostRecentItem() -> Int {
+    private func numberOfVisitsForMostRecentItem() -> Int {
         let numVisits = items[mostRecentItemID]?.numberOfVisits
         return numVisits ? numVisits! : 0
     }
     
-    func numberOfTransitionsFromMostRecentItemToItem(item: String) -> Int {
+    private func numberOfTransitionsFromMostRecentItemToItem(item: String) -> Int {
         let numTransitions = items[mostRecentItemID]?.numberOfTransitionsToItem(item)
         return numTransitions ? numTransitions! : 0
     }
     
-    // CRF weight
+    //MARK: CRF weight
     
-    func crfWeightForItem(item: String) -> Double {
+    private func crfWeightForItem(item: String) -> Double {
         return items[item]!.crfWeight
     }
     
-    // Time weight
+    //MARK: Time weight
 
-    func timeWeightForItem(item: String) -> Double {
+    private func timeWeightForItem(item: String) -> Double {
         let rh = hourOfDayRatioForItem(item)
         let rd = dayOfWeekRatioForItem(item)
         
         return pow(max(0.8, min(1.25, rh * rd)), 0.25)
     }
     
-    // Time weight: Ratio for time of day
+    //MARK: Time weight: Ratio for time of day
     
-    func hourOfDayRatioForItem(item: String) -> Double {
+    private func hourOfDayRatioForItem(item: String) -> Double {
         if (numberOfCurrentHourItemVisits() < 10) {
             return 1.0
         }
         return Double(numberOfCurrentHourVisitsToItem(item)) / averageNumberOfCurrentHourVisitsToItem(item)
     }
     
-    func numberOfCurrentHourItemVisits() -> Int {
+    private func numberOfCurrentHourItemVisits() -> Int {
         var numVisits = 0
         for (_, itemState) in items {
             numVisits += itemState.numberOfVisitsToItemsInCurrentHourSlot()
@@ -224,14 +224,14 @@ class AccessRank {
         return numVisits
     }
     
-    func numberOfCurrentHourVisitsToItem(item: String) -> Int {
+    private func numberOfCurrentHourVisitsToItem(item: String) -> Int {
         let currentHour = NSCalendar.currentCalendar().components(
             NSCalendarUnit.CalendarUnitHour, fromDate: NSDate()).hour
         
         return numberOfVisitsToItem(item, inTimeSlotAtHour: currentHour)
     }
     
-    func averageNumberOfCurrentHourVisitsToItem(item: String) -> Double {
+    private func averageNumberOfCurrentHourVisitsToItem(item: String) -> Double {
         var totalVisits = 0
         var hourOfDay = 1
         
@@ -242,7 +242,7 @@ class AccessRank {
         return Double(totalVisits) / 8
     }
     
-    func numberOfVisitsToItem(item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
+    private func numberOfVisitsToItem(item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
         var numVisits = 0
         for (_, itemState) in items {
             numVisits += itemState.numberOfVisitsToItem(item, inTimeSlotAtHour: hourOfDay)
@@ -250,16 +250,16 @@ class AccessRank {
         return numVisits;
     }
     
-    // Time weight: Ratio for day of week
+    //MARK: Time weight: Ratio for day of week
     
-    func dayOfWeekRatioForItem(item: String) -> Double {
+    private func dayOfWeekRatioForItem(item: String) -> Double {
         if (numberOfCurrentWeekdayItemVisits() < 10) {
             return 1.0
         }
         return Double(numberOfCurrentWeekdayVisitsToItem(item)) / averageNumberOfWeekdayVisitsToItem(item)
     }
     
-    func numberOfCurrentWeekdayItemVisits() -> Int {
+    private func numberOfCurrentWeekdayItemVisits() -> Int {
         var numVisits = 0
         for (_, itemState) in items {
             numVisits += itemState.numberOfVisitsToItemsAtCurrentWeekday()
@@ -267,14 +267,14 @@ class AccessRank {
         return numVisits
     }
     
-    func numberOfCurrentWeekdayVisitsToItem(item: String) -> Int {
+    private func numberOfCurrentWeekdayVisitsToItem(item: String) -> Int {
         let currentWeekday = NSCalendar.currentCalendar().components(
             NSCalendarUnit.CalendarUnitWeekday, fromDate: NSDate()).weekday
         
         return numberOfVisitsToItem(item, atWeekday: currentWeekday)
     }
     
-    func averageNumberOfWeekdayVisitsToItem(item: String) -> Double {
+    private func averageNumberOfWeekdayVisitsToItem(item: String) -> Double {
         var totalVisits = 0
         for weekday in 1...7 {
             totalVisits += numberOfVisitsToItem(item, atWeekday: weekday)
@@ -282,7 +282,7 @@ class AccessRank {
         return Double(totalVisits) / 7
     }
     
-    func numberOfVisitsToItem(item: String, atWeekday weekday: Int) -> Int {
+    private func numberOfVisitsToItem(item: String, atWeekday weekday: Int) -> Int {
         var numVisits = 0
         for (itemID, itemState) in items {
             numVisits += itemState.numberOfVisitsToItem(item, atWeekday: weekday)
@@ -290,9 +290,9 @@ class AccessRank {
         return numVisits;
     }
     
-    // Convenience methods for persisting and restoring the data structure
+    //MARK: Convenience methods for persisting and restoring the data structure
     
-    func toDictionary() -> [String: AnyObject] {
+    public func toDictionary() -> [String: AnyObject] {
         var itemsObj = [String: [String: AnyObject]]()
         for (itemID, itemState) in items {
             itemsObj[itemID] = itemState.toDictionary()
@@ -307,7 +307,7 @@ class AccessRank {
             "mostRecentItemID": mostRecentItemID]
     }
     
-    func fromDictionary(dict: [String: AnyObject]) {
+    private func fromDictionary(dict: [String: AnyObject]) {
         if let itemsObj = dict["items"]! as? [String: [String: AnyObject]] {
             items = [String: ItemState]()
             for (itemID, itemStateObj) in itemsObj {
@@ -328,9 +328,9 @@ class AccessRank {
         }
     }
     
-    // Structs
+    //MARK: Structs
     
-    struct ItemVisit {
+    private struct ItemVisit {
         var id: String
         var hour: Int
         var weekday: Int
@@ -359,7 +359,7 @@ class AccessRank {
         }
     }
     
-    struct ItemState {
+    private struct ItemState {
         var nextVisits = [String: [ItemVisit]]()
         var visitNumber = 0
         var numberOfVisits = 0
@@ -499,7 +499,7 @@ class AccessRank {
         }
     }
     
-    struct ScoredItem {
+    private struct ScoredItem {
         var id: String
         var score: Double
         
@@ -525,7 +525,7 @@ class AccessRank {
     
     // Debugging
     
-    func markovDescription() -> String {
+    public func markovDescription() -> String {
         var str = ""
         for (item, itemState) in items {
             str += "\(item) > \(itemState.markovDescription())\n"
@@ -533,7 +533,7 @@ class AccessRank {
         return str
     }
     
-    func scoreDescription() -> String {
+    public func scoreDescription() -> String {
         var str = ""
         for (_, scoredItem) in enumerate(predictionList) {
             str += "\(scoredItem.id): score: \(scoredItem.score), markov: \(markovWeightForItem(scoredItem.id)), crf: \(crfWeightForItem(scoredItem.id)), time: \(timeWeightForItem(scoredItem.id))\n"
@@ -541,7 +541,7 @@ class AccessRank {
         return str
     }
     
-    func predictionListDescription() -> String {
+    public func predictionListDescription() -> String {
         var str = ""
         for scoredItem in predictionList {
             str += "\(scoredItem.id): \(scoredItem.score)\n"

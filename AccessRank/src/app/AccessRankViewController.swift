@@ -2,15 +2,15 @@ import UIKit
 
 class AccessRankViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AccessRankDelegate {
     
-    @IBOutlet var tableView : UITableView
-    @IBOutlet var predictionsTextView: UITextView
+    @IBOutlet var tableView : UITableView!
+    @IBOutlet var predictionsTextView: UITextView!
     
-    let itemCellIdentifier = "ItemCellIdentifier"
-    let accessRankuserDefaultsKey = "accessRank"
+    private let itemCellIdentifier = "ItemCellIdentifier"
+    private let accessRankuserDefaultsKey = "accessRank"
     
-    var accessRank: AccessRank
+    private var accessRank: AccessRank
     
-    init(nibName nibNameOrNil: String!, bundle nibBundleOrNil: NSBundle!) {
+    public init(nibName nibNameOrNil: String!, bundle nibBundleOrNil: NSBundle!) {
         let data: AnyObject? = NSUserDefaults.standardUserDefaults().objectForKey(accessRankuserDefaultsKey)
         accessRank = AccessRank(
             listStability: AccessRank.ListStability.Medium,
@@ -28,9 +28,9 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
         updatePredictionList()
     }
     
-    // Table view
+    //MARK: Table view
     
-    func setupTableView() {
+    private func setupTableView() {
         tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: itemCellIdentifier)
     }
     
@@ -50,20 +50,20 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
         }
     }
     
-    // AccessRankDelegate
+    //MARK: AccessRankDelegate
     
     func accessRankDidUpdatePredictions(accessRank: AccessRank) {
         updatePredictionList()
     }
     
-    func updatePredictionList() {
+    private func updatePredictionList() {
         let predictedItems = accessRank.predictions.map { Items.byID[$0]! }
         predictionsTextView.text = join("\n", predictedItems)
     }
     
-    // Persistence (called in AppDelegate)
+    //MARK: Persistence (called in AppDelegate)
     
-    func saveToUserDefaults() {
+    public func saveToUserDefaults() {
         NSUserDefaults.standardUserDefaults().setObject(accessRank.toDictionary(), forKey: accessRankuserDefaultsKey)
         NSUserDefaults.standardUserDefaults().synchronize()
     }
