@@ -6,9 +6,9 @@ public struct Items {
         var items = [[String: String]]()
         for index in 65...90 {
             let letter = String(UnicodeScalar(index))
-            items += [
+            items.append([
                 "name": NSString(format: "Item %@", letter),
-                "id": letter]
+                "id": letter])
         }
         return items
     }()

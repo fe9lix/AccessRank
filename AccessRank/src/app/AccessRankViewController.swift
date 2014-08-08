@@ -1,6 +1,6 @@
 import UIKit
 
-class AccessRankViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AccessRankDelegate {
+public class AccessRankViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AccessRankDelegate {
     
     @IBOutlet var tableView : UITableView!
     @IBOutlet var predictionsTextView: UITextView!
@@ -10,7 +10,7 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
     
     private var accessRank: AccessRank
     
-    public init(nibName nibNameOrNil: String!, bundle nibBundleOrNil: NSBundle!) {
+    override public init(nibName nibNameOrNil: String!, bundle nibBundleOrNil: NSBundle!) {
         let data: AnyObject? = NSUserDefaults.standardUserDefaults().objectForKey(accessRankuserDefaultsKey)
         accessRank = AccessRank(
             listStability: AccessRank.ListStability.Medium,
@@ -21,7 +21,15 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
         accessRank.delegate = self
     }
     
-    override func viewDidLoad() {
+    convenience override init() {
+        self.init(nibName: "AccessRankViewController", bundle: nil)
+    }
+    
+    required public init(coder: NSCoder) {
+        fatalError("NSCoding not supported")
+    }
+    
+    override public func viewDidLoad() {
         super.viewDidLoad()
 
         setupTableView()
@@ -34,17 +42,17 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
         tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: itemCellIdentifier)
     }
     
-    func tableView(tableView: UITableView!, numberOfRowsInSection section: Int) -> Int {
+    public func tableView(tableView: UITableView!, numberOfRowsInSection section: Int) -> Int {
         return Items.all.count
     }
     
-    func tableView(tableView: UITableView!, cellForRowAtIndexPath indexPath: NSIndexPath!) -> UITableViewCell! {
+    public func tableView(tableView: UITableView!, cellForRowAtIndexPath indexPath: NSIndexPath!) -> UITableViewCell! {
         let cell = tableView.dequeueReusableCellWithIdentifier(itemCellIdentifier, forIndexPath: indexPath) as UITableViewCell
         cell.textLabel.text = Items.all[indexPath.row]["name"]
         return cell
     }
     
-    func tableView(tableView: UITableView!, didSelectRowAtIndexPath indexPath: NSIndexPath!) {
+    public func tableView(tableView: UITableView!, didSelectRowAtIndexPath indexPath: NSIndexPath!) {
         if let id = Items.all[indexPath.row]["id"] {
             accessRank.visitItem(id)
         }
@@ -52,7 +60,7 @@ class AccessRankViewController: UIViewController, UITableViewDataSource, UITable
     
     //MARK: AccessRankDelegate
     
-    func accessRankDidUpdatePredictions(accessRank: AccessRank) {
+    public func accessRankDidUpdatePredictions(accessRank: AccessRank) {
         updatePredictionList()
     }
     

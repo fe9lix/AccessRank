@@ -26,7 +26,6 @@ Just copy the folder `src/AccessRank` into your project.
 ### Demo Project
 
 The demo project shows a simple usage example: It contains a table view with item names and a text view with predictions. When you select an item, it is added to *AccessRank*, and the list of predictions for which item you might select next is updated. When the app is moved to the background state, an *AccessRank* snapshot is saved to the user defaults (also see the section on persistence).
-*Note*: The example doesn't use auto-layout due to some obscure bugs in Xcode 6 beta.
 
 ### Usage
 

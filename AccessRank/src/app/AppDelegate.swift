@@ -10,7 +10,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         window = UIWindow(frame:UIScreen.mainScreen().bounds)
         
         if let win = window {
-            accessRankViewController = AccessRankViewController(nibName: nil, bundle: nil)
+            accessRankViewController = AccessRankViewController()
             win.rootViewController = accessRankViewController
             win.makeKeyAndVisible()
             return true
