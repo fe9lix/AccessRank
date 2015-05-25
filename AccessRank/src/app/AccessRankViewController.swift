@@ -21,7 +21,7 @@ public class AccessRankViewController: UIViewController, UITableViewDataSource, 
         accessRank.delegate = self
     }
     
-    convenience override init() {
+    convenience init() {
         self.init(nibName: "AccessRankViewController", bundle: nil)
     }
     
@@ -42,17 +42,17 @@ public class AccessRankViewController: UIViewController, UITableViewDataSource, 
         tableView.registerClass(UITableViewCell.self, forCellReuseIdentifier: itemCellIdentifier)
     }
     
-    public func tableView(tableView: UITableView!, numberOfRowsInSection section: Int) -> Int {
+    public func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return Items.all.count
     }
     
-    public func tableView(tableView: UITableView!, cellForRowAtIndexPath indexPath: NSIndexPath!) -> UITableViewCell! {
-        let cell = tableView.dequeueReusableCellWithIdentifier(itemCellIdentifier, forIndexPath: indexPath) as UITableViewCell
-        cell.textLabel.text = Items.all[indexPath.row]["name"]
+    public func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCellWithIdentifier(itemCellIdentifier, forIndexPath: indexPath) as! UITableViewCell
+        cell.textLabel!.text = Items.all[indexPath.row]["name"]
         return cell
     }
     
-    public func tableView(tableView: UITableView!, didSelectRowAtIndexPath indexPath: NSIndexPath!) {
+    public func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
         if let id = Items.all[indexPath.row]["id"] {
             accessRank.visitItem(id)
         }

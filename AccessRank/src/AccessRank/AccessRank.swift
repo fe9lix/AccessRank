@@ -306,18 +306,18 @@ public class AccessRank {
     }
     
     private func fromDictionary(dict: [String: AnyObject]) {
-        let itemsObj = dict["items"]! as [String: [String: AnyObject]]
+        let itemsObj = dict["items"] as! [String: [String: AnyObject]]
         items = [String: ItemState]()
         for (itemID, itemStateObj) in itemsObj {
             items[itemID] = ItemState(data: itemStateObj)
         }
         
-        let predictionListObj = dict["predictionList"]! as [[String: AnyObject]]
+        let predictionListObj = dict["predictionList"] as! [[String: AnyObject]]
         predictionList = predictionListObj.map { ScoredItem(data: $0) }
         
-        visitNumber = dict["visitNumber"]! as Int
+        visitNumber = dict["visitNumber"] as! Int
         
-        mostRecentItemID = dict["mostRecentItemID"]! as String
+        mostRecentItemID = dict["mostRecentItemID"] as! String
     }
     
     //MARK: Structs
@@ -334,9 +334,9 @@ public class AccessRank {
         }
         
         init(data: [String: AnyObject]) {
-            self.id = data["id"]! as String
-            self.hour = data["hour"]! as Int
-            self.weekday = data["weekday"]! as Int
+            self.id = data["id"] as! String
+            self.hour = data["hour"] as! Int
+            self.weekday = data["weekday"] as! Int
         }
         
         func toDictionary() -> [String: AnyObject] {
@@ -365,11 +365,11 @@ public class AccessRank {
             }
             
             self.nextVisits = nextVisitsValue
-            self.visitNumber = data["visitNumber"]! as Int
-            self.numberOfVisits = data["numberOfVisits"]! as Int
-            self.timeOfLastVisit = data["timeOfLastVisit"]! as NSTimeInterval
-            self.crfWeight = data["crfWeight"]! as Double
-            self.rank = data["rank"]! as Int
+            self.visitNumber = data["visitNumber"] as! Int
+            self.numberOfVisits = data["numberOfVisits"] as! Int
+            self.timeOfLastVisit = data["timeOfLastVisit"] as! NSTimeInterval
+            self.crfWeight = data["crfWeight"] as! Double
+            self.rank = data["rank"] as! Int
         }
         
         mutating func addVisitToItem(item: String) {
@@ -490,8 +490,8 @@ public class AccessRank {
         }
         
         init(data: [String: AnyObject]) {
-            self.id = data["id"]! as String
-            self.score = data["score"]! as Double
+            self.id = data["id"] as! String
+            self.score = data["score"] as! Double
         }
         
         func toDictionary() -> [String: AnyObject] {
