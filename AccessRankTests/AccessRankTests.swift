@@ -1,10 +1,11 @@
 import XCTest
-import AccessRank
+@testable import AccessRank
 
 class AccessRankTests: XCTestCase, AccessRankDelegate {
+    private let accessRank: AccessRank = AccessRank(listStability: .medium)
+    private var delegateExpectation: XCTestExpectation?
     
-    let accessRank: AccessRank = AccessRank(listStability: AccessRank.ListStability.Medium)
-    var delegateExpectation: XCTestExpectation?
+    // MARK: - Lifecycle
     
     override func setUp() {
         super.setUp()
@@ -14,8 +15,10 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         super.tearDown()
     }
     
+    // MARK: - Tests
+    
     func testLowListStability() {
-        let accessRankLow = AccessRank(listStability: AccessRank.ListStability.Low)
+        let accessRankLow = AccessRank(listStability: .low)
         accessRankLow.visitItem("A")
         accessRankLow.visitItem("B")
         accessRankLow.visitItem("C")
@@ -36,7 +39,7 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
     }
     
     func testHighListStability() {
-        let accessRankHigh = AccessRank(listStability: AccessRank.ListStability.High)
+        let accessRankHigh = AccessRank(listStability: .high)
         accessRankHigh.visitItem("A")
         accessRankHigh.visitItem("B")
         accessRankHigh.visitItem("C")
@@ -68,7 +71,7 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         accessRank.visitItem(nil)
         accessRank.visitItem("C")
         
-        XCTAssertFalse(contains(accessRank.predictions, accessRank.initialItem))
+        XCTAssertFalse(accessRank.predictions.contains(accessRank.initialItem))
     }
  
     func testPredictionsShouldNotContainMostRecentItem() {
@@ -76,7 +79,7 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         accessRank.visitItem("B")
         accessRank.visitItem("C")
         
-        XCTAssertFalse(contains(accessRank.predictions, accessRank.mostRecentItem!))
+        XCTAssertFalse(accessRank.predictions.contains(accessRank.mostRecentItem!))
     }
     
     func testRemoveItems() {
@@ -87,8 +90,8 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         
         accessRank.removeItems(["C", "A"])
         
-        XCTAssertFalse(contains(accessRank.predictions, "A"))
-        XCTAssertFalse(contains(accessRank.predictions, "C"))
+        XCTAssertFalse(accessRank.predictions.contains("A"))
+        XCTAssertFalse(accessRank.predictions.contains("C"))
         XCTAssertNil(accessRank.mostRecentItem)
     }
     
@@ -97,11 +100,11 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         accessRank.visitItem("B")
         accessRank.visitItem("C")
         
-        let dataToPersist = accessRank.toDictionary()
-        
+        let snapshot = accessRank.toDictionary()
         let restoredAccessRank = AccessRank(
-            listStability: AccessRank.ListStability.Medium,
-            data: dataToPersist)
+            listStability: .medium,
+            snapshot: snapshot
+        )
         
         XCTAssertTrue(restoredAccessRank.mostRecentItem == accessRank.mostRecentItem)
         XCTAssertTrue(restoredAccessRank.predictions == accessRank.predictions)
@@ -110,17 +113,16 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
     func testDelegate() {
         accessRank.visitItem("A")
         
-        delegateExpectation = expectationWithDescription("update predictions")
+        delegateExpectation = expectation(description: "update predictions")
         
         accessRank.delegate = self
         accessRank.visitItem("B")
         
-        waitForExpectationsWithTimeout(5.0, handler: nil)
+        waitForExpectations(timeout: 5.0, handler: nil)
     }
     
-    func accessRankDidUpdatePredictions(accessRank: AccessRank) {
+    func accessRankDidUpdatePredictions(_ accessRank: AccessRank) {
         XCTAssertEqual(accessRank.predictions.count, 1)
         delegateExpectation?.fulfill()
     }
-    
 }

@@ -21,7 +21,7 @@ Thanks to Stephen Fitchett for answering my questions and giving feedback!
 
 ### Installation
 
-Just copy the folder `src/AccessRank` into your project. 
+Just copy the folder `src/AccessRank` into your project. The latest version requires Swift 3 and Xcode 8. 
 
 ### Demo Project
 
@@ -33,11 +33,11 @@ Public methods and properties are documented in the following sections.
 
 #### Initializing
 
-*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.ListStability.Medium`. Other possible values are `.ListStability.Low` and `.ListStability.High`. *Low* stability means that prediction accuracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.  
+*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.medium`. Other possible values are `.low` and `.high`. *Low* stability means that prediction accuracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.  
 (Also see the three unit tests on list stability in `AccessRankTests.swift` to get an idea on how this value affects predictions.)
 
 ```swift
-let accessRank = AccessRank(listStability: AccessRank.ListStability.Medium)
+let accessRank = AccessRank(listStability: .medium)
 ```
 
 #### Configuration
@@ -58,7 +58,7 @@ accessRank.visitItem("A")
 
 #### Most Recent Item
 
-Calling the property getter `mostRecentItem` returns the most recently visited item id as an `optional`.
+Calling the property getter `mostRecentItem` returns the most recently visited item id as `optional`.
 
 ```swift
 println("mostRecentItem: \(accessRank.mostRecentItem)")
@@ -74,7 +74,7 @@ accessRank.removeItems(["A", "B"])
 
 #### Predictions
 
-The `predictions` property getter returns the current predictions as an array containing all your item ids (the ones you previously set using `mostRecentItem`) in sorted order. The first item in the array is the most likely next item. To display the predicted items somewhere in the user interface, these ids can then be matched to the item ids of your own list data structure. 
+The `predictions` property getter returns the current predictions as array containing all your item ids (the ones you previously set using `mostRecentItem`) in sorted order. The first item in the array is the most likely next item. To display the predicted items somewhere in the user interface, these ids can then be matched to the item ids of your own list data structure. 
 
 ```swift
 println("predictions: \(accessRank.predictions)")
@@ -82,7 +82,7 @@ println("predictions: \(accessRank.predictions)")
 
 #### Delegate Methods
 
-The delegate method `accessRankDidUpdatePredictions(accessRank: AccessRank)` is called whenever the predictions are updated. Predictions are updated when you set `mostRecentItem`, or when you call `removeItems`.
+The delegate method `accessRankDidUpdatePredictions(_ accessRank: AccessRank)` is called whenever the predictions are updated. Predictions are updated when you set `mostRecentItem`, or when you call `removeItems`.
 
 ```swift
 accessRank.delegate = self
@@ -99,11 +99,8 @@ If you want to persist the current *AccessRank* data in your application beyond 
 Once you have stored the data, you can restore *AccessRank* by setting the dictionary as second parameter in the initializer:
 
 ```swift
-let dataToPersist = accessRank.toDictionary()
-        
-let restoredAccessRank = AccessRank(
-    listStability: AccessRank.ListStability.Medium,
-    data: dataToPersist)
+let snapshot = accessRank.toDictionary()
+let restoredAccessRank = AccessRank(listStability: .medium, snapshot: snapshot)
 ```
 
 ### Unit Tests
