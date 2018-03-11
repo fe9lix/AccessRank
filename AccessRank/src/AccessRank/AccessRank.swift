@@ -27,6 +27,7 @@ public final class AccessRank: Codable {
     }
     
     public weak var delegate: AccessRankDelegate?
+    
     public var listStability: ListStability = .medium
     public var useTimeWeighting = true
     public var initialItem = "<access_rank_nil>"
@@ -220,7 +221,6 @@ public final class AccessRank: Codable {
     
     private func numberOfCurrentHourVisitsToItem(_ item: String) -> Int {
         let currentHour = Calendar.current.component(.hour, from: Date())
-        
         return numberOfVisitsToItem(item, inTimeSlotAtHour: currentHour)
     }
     
@@ -286,7 +286,7 @@ public final class AccessRank: Codable {
         case mostRecentItemID
         case predictionList
     }
-
+    
     public init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         listStability = try values.decode(ListStability.self, forKey: .listStability)
@@ -301,15 +301,9 @@ public final class AccessRank: Codable {
     // MARK: - Structs
     
     private struct ItemVisit: Codable {
-        var id: String
-        var hour: Int
-        var weekday: Int
-        
-        init(id: String, hour: Int, weekday: Int) {
-            self.id = id
-            self.hour = hour
-            self.weekday = weekday
-        }
+        let id: String
+        let hour: Int
+        let weekday: Int
     }
     
     private struct ItemState: Codable {
@@ -319,8 +313,6 @@ public final class AccessRank: Codable {
         var timeOfLastVisit: TimeInterval = 0
         var crfWeight = 0.0
         var rank = Int.max
-        
-        init() {}
         
         mutating func addVisitToItem(_ item: String) {
             let calendarComponents = Calendar.current.dateComponents([.hour, .weekday], from: Date())
@@ -358,68 +350,47 @@ public final class AccessRank: Codable {
         
         func numberOfVisitsToItemsInCurrentHourSlot() -> Int {
             let currentHour = Calendar.current.component(.hour, from: Date())
-            var numVisits = 0
-            
-            for (itemID, _) in nextVisits {
-                numVisits += numberOfVisitsToItem(itemID, inTimeSlotAtHour: currentHour)
+            return nextVisits.reduce(into: 0) { (total, visit) in
+                total += numberOfVisitsToItem(visit.key, inTimeSlotAtHour: currentHour)
             }
-            return numVisits
         }
         
         func numberOfVisitsToItem(_ item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
-            var numVisits = 0
-            
-            if let itemVisits = nextVisits[item] {
-                for itemVisit in itemVisits {
-                    if (itemVisit.hour >= (hourOfDay - 1)) && (itemVisit.hour <= (hourOfDay + 1)) {
-                        numVisits += 1
-                    }
+            guard let itemVisits = nextVisits[item] else { return 0 }
+            return itemVisits.reduce(into: 0) { (total, itemVisit) in
+                if (itemVisit.hour >= (hourOfDay - 1)) && (itemVisit.hour <= (hourOfDay + 1)) {
+                    total += 1
                 }
             }
-            return numVisits
         }
         
         func numberOfVisitsToItemsAtCurrentWeekday() -> Int {
             let currentWeekday = Calendar.current.component(.weekday, from: Date())
-            var numVisits = 0
-            
-            for (itemID, _) in nextVisits {
-                numVisits += numberOfVisitsToItem(itemID, atWeekday: currentWeekday)
+            return nextVisits.reduce(into: 0) { (total, item) in
+                total += numberOfVisitsToItem(item.key, atWeekday: currentWeekday)
             }
-            return numVisits
         }
         
         func numberOfVisitsToItem(_ item: String, atWeekday weekday: Int) -> Int {
-            var numVisits = 0
-            
-            if let itemVisits = nextVisits[item] {
-                for itemVisit in itemVisits {
-                    if itemVisit.weekday == weekday {
-                        numVisits += 1
-                    }
+            guard let itemVisits = nextVisits[item] else { return 0 }
+            return itemVisits.reduce(into: 0) { (total, itemVisit) in
+                if itemVisit.weekday == weekday {
+                    total += 1
                 }
             }
-            return numVisits
         }
         
         func markovDescription() -> String {
-            var items = [String]()
-            for (itemID, _) in nextVisits {
-                let count = nextVisits[itemID]?.count
-                items.append("\(itemID) (\(String(count!)))")
-            }
-            return items.joined(separator: ", ")
+            return nextVisits.reduce(into: [String]()) { (items, itemVisit) in
+                let count = nextVisits[itemVisit.key]?.count
+                items.append("\(itemVisit.key) (\(String(count!)))")
+                }.joined(separator: ", ")
         }
     }
     
     private struct ScoredItem: Codable {
-        var id: String
-        var score: Double
-        
-        init(id: String, score: Double) {
-            self.id = id
-            self.score = score
-        }
+        let id: String
+        let score: Double
     }
     
     // MARK: - Debugging
@@ -441,5 +412,4 @@ public final class AccessRank: Codable {
             str += "\(scoredItem.id): \(scoredItem.score)\n"
         }
     }
-
 }
