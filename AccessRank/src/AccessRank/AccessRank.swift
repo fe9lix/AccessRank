@@ -13,13 +13,21 @@ public protocol AccessRankDelegate: class {
     func accessRankDidUpdatePredictions(_ accessRank: AccessRank)
 }
 
-public class AccessRank {
-    public enum ListStability {
+public final class AccessRank: Codable {
+    public enum ListStability: String, Codable {
         case low, medium, high
+        
+        var value: (l: Double, d: Double) {
+            switch self {
+            case .low: return (l: 1.65, d: 0.0)
+            case .medium: return (l: 1.65, d: 0.2)
+            case .high: return (l: 2.50, d: 0.5)
+            }
+        }
     }
     
     public weak var delegate: AccessRankDelegate?
-    public var listStability: ListStability
+    public var listStability: ListStability = .medium
     public var useTimeWeighting = true
     public var initialItem = "<access_rank_nil>"
     public var mostRecentItem: String? {
@@ -31,25 +39,14 @@ public class AccessRank {
             .filter { $0 != mostRecentItemID }
     }
     
-    private var listStabilityValue: (l: Double, d: Double) {
-        switch listStability {
-        case .low: return (l: 1.65, d: 0.0)
-        case .medium: return (l: 1.65, d: 0.2)
-        case .high: return (l: 2.50, d: 0.5)
-        }
-    }
     private var items = [String: ItemState]()
     private var visitNumber = 0
     private var mostRecentItemID: String
     private var predictionList = [ScoredItem]()
     
-    public init(listStability: ListStability = .medium, snapshot: [String: Any]? = nil) {
+    public init(listStability: ListStability = .medium) {
         self.listStability = listStability
         self.mostRecentItemID = initialItem
-        
-        if let snapshot = snapshot {
-            fromDictionary(snapshot)
-        }
     }
     
     // MARK: - Item updates
@@ -135,9 +132,9 @@ public class AccessRank {
             var scoreB = B.score
             
             if (itemA.rank < itemB.rank) && (scoreB > scoreA) {
-                scoreA += self.listStabilityValue.d
+                scoreA += self.listStability.value.d
             } else if (itemA.rank > itemB.rank) && (scoreB < scoreA) {
-                scoreB += self.listStabilityValue.d
+                scoreB += self.listStability.value.d
             }
             
             if scoreA == scoreB {
@@ -166,7 +163,7 @@ public class AccessRank {
     // MARK: - Combined score
     
     private func scoreForItem(_ item: String) -> Double {
-        let l = listStabilityValue.l
+        let l = listStability.value.l
         let wm = markovWeightForItem(item)
         let wcrf = crfWeightForItem(item)
         let wt = useTimeWeighting ? timeWeightForItem(item) : 1.0
@@ -278,40 +275,32 @@ public class AccessRank {
         }
     }
     
-    // MARK: - Persistence
+    // MARK: - Codable
     
-    public func toDictionary() -> [String: Any] {
-        var itemsObj = [String: [String: Any]]()
-        for (itemID, itemState) in items {
-            itemsObj[itemID] = itemState.toDictionary()
-        }
-        
-        let predictionsListObj = predictionList.map { $0.toDictionary() }
-        
-        return [
-            "items": itemsObj,
-            "predictionList": predictionsListObj,
-            "visitNumber": visitNumber,
-            "mostRecentItemID": mostRecentItemID
-        ]
+    enum CodingKeys: String, CodingKey {
+        case listStability
+        case useTimeWeighting
+        case initialItem
+        case items
+        case visitNumber
+        case mostRecentItemID
+        case predictionList
     }
-    
-    private func fromDictionary(_ dict: [String: Any]) {
-        let itemsObj = dict["items"] as! [String: [String: Any]]
-        items = [String: ItemState]()
-        for (itemID, itemStateObj) in itemsObj {
-            items[itemID] = ItemState(data: itemStateObj)
-        }
-        
-        let predictionListObj = dict["predictionList"] as! [[String: Any]]
-        predictionList = predictionListObj.map { ScoredItem(data: $0) }
-        visitNumber = dict["visitNumber"] as! Int
-        mostRecentItemID = dict["mostRecentItemID"] as! String
+
+    public init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        listStability = try values.decode(ListStability.self, forKey: .listStability)
+        useTimeWeighting = try values.decode(Bool.self, forKey: .useTimeWeighting)
+        initialItem = try values.decode(String.self, forKey: .initialItem)
+        items = try values.decode(Dictionary<String, ItemState>.self, forKey: .items)
+        visitNumber = try values.decode(Int.self, forKey: .visitNumber)
+        mostRecentItemID = try values.decode(String.self, forKey: .mostRecentItemID)
+        predictionList = try values.decode(Array<ScoredItem>.self, forKey: .predictionList)
     }
     
     // MARK: - Structs
     
-    private struct ItemVisit {
+    private struct ItemVisit: Codable {
         var id: String
         var hour: Int
         var weekday: Int
@@ -321,23 +310,9 @@ public class AccessRank {
             self.hour = hour
             self.weekday = weekday
         }
-        
-        init(data: [String: Any]) {
-            self.id = data["id"] as! String
-            self.hour = data["hour"] as! Int
-            self.weekday = data["weekday"] as! Int
-        }
-        
-        func toDictionary() -> [String: Any] {
-            return [
-                "id": id,
-                "hour": hour,
-                "weekday": weekday
-            ]
-        }
     }
     
-    private struct ItemState {
+    private struct ItemState: Codable {
         var nextVisits = [String: [ItemVisit]]()
         var visitNumber = 0
         var numberOfVisits = 0
@@ -346,21 +321,6 @@ public class AccessRank {
         var rank = Int.max
         
         init() {}
-        
-        init(data: [String: Any]) {
-            let nextVisitsObj = data["nextVisits"]! as? [String: [[String: Any]]]
-            var nextVisitsValue = [String: [ItemVisit]]()
-            for (itemID, itemVisitsObj) in nextVisitsObj! {
-                nextVisitsValue[itemID] = itemVisitsObj.map { ItemVisit(data: $0) }
-            }
-            
-            nextVisits = nextVisitsValue
-            visitNumber = data["visitNumber"] as! Int
-            numberOfVisits = data["numberOfVisits"] as! Int
-            timeOfLastVisit = data["timeOfLastVisit"] as! TimeInterval
-            crfWeight = data["crfWeight"] as! Double
-            rank = data["rank"] as! Int
-        }
         
         mutating func addVisitToItem(_ item: String) {
             let calendarComponents = Calendar.current.dateComponents([.hour, .weekday], from: Date())
@@ -442,22 +402,6 @@ public class AccessRank {
             return numVisits
         }
         
-        func toDictionary() -> [String: Any] {
-            var nextVisitsObj = [String: [[String: Any]]]()
-            for (itemID, itemVisits) in nextVisits {
-                nextVisitsObj[itemID] = itemVisits.map { $0.toDictionary() }
-            }
-            
-            return [
-                "nextVisits": nextVisitsObj,
-                "visitNumber": visitNumber,
-                "numberOfVisits": numberOfVisits,
-                "timeOfLastVisit": timeOfLastVisit,
-                "crfWeight": crfWeight,
-                "rank": rank
-            ]
-        }
-        
         func markovDescription() -> String {
             var items = [String]()
             for (itemID, _) in nextVisits {
@@ -468,25 +412,13 @@ public class AccessRank {
         }
     }
     
-    private struct ScoredItem {
+    private struct ScoredItem: Codable {
         var id: String
         var score: Double
         
         init(id: String, score: Double) {
             self.id = id
             self.score = score
-        }
-        
-        init(data: [String: Any]) {
-            self.id = data["id"] as! String
-            self.score = data["score"] as! Double
-        }
-        
-        func toDictionary() -> [String: Any] {
-            return [
-                "id": id,
-                "score": score
-            ]
         }
     }
     
@@ -509,4 +441,5 @@ public class AccessRank {
             str += "\(scoredItem.id): \(scoredItem.score)\n"
         }
     }
+
 }

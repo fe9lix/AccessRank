@@ -100,14 +100,11 @@ class AccessRankTests: XCTestCase, AccessRankDelegate {
         accessRank.visitItem("B")
         accessRank.visitItem("C")
         
-        let snapshot = accessRank.toDictionary()
-        let restoredAccessRank = AccessRank(
-            listStability: .medium,
-            snapshot: snapshot
-        )
+        let encodedAccessRank = try! JSONEncoder().encode(accessRank)
+        let decodedAccessRank = try! JSONDecoder().decode(AccessRank.self, from: encodedAccessRank)
         
-        XCTAssertTrue(restoredAccessRank.mostRecentItem == accessRank.mostRecentItem)
-        XCTAssertTrue(restoredAccessRank.predictions == accessRank.predictions)
+        XCTAssertTrue(decodedAccessRank.mostRecentItem == accessRank.mostRecentItem)
+        XCTAssertTrue(decodedAccessRank.predictions == accessRank.predictions)
     }
     
     func testDelegate() {

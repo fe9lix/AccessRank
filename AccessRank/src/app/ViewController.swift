@@ -8,8 +8,13 @@ final class ViewController: UIViewController, UITableViewDataSource, UITableView
     private let userDefaultsKey = "accessRank"
     
     private lazy var accessRank: AccessRank = {
-        let snapshot = UserDefaults.standard.object(forKey: self.userDefaultsKey) as? [String: Any]
-        let accessRank = AccessRank(listStability: .medium, snapshot: snapshot)
+        let accessRank: AccessRank
+        if let jsonData = UserDefaults.standard.data(forKey: self.userDefaultsKey) {
+            accessRank = try! JSONDecoder().decode(AccessRank.self, from: jsonData)
+        } else {
+            accessRank = AccessRank(listStability: .medium)
+        }
+        
         accessRank.delegate = self
         return accessRank
     }()
@@ -72,6 +77,7 @@ final class ViewController: UIViewController, UITableViewDataSource, UITableView
     }
     
     private func saveToUserDefaults() {
-        UserDefaults.standard.set(accessRank.toDictionary(), forKey: userDefaultsKey)
+        let encodedAccessRank = try? JSONEncoder().encode(accessRank)
+        UserDefaults.standard.set(encodedAccessRank, forKey: userDefaultsKey)
     }
 }
