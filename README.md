@@ -33,11 +33,13 @@ Public methods and properties are documented in the following sections.
 
 #### Initializing
 
-*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.medium`. Other possible values are `.low` and `.high`. *Low* stability means that prediction accuracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.  
-(Also see the three unit tests on list stability in `AccessRankTests.swift` to get an idea on how this value affects predictions.)
+*AccessRank* is initialized with an enum value for the list stability that should be used for predictions. The default list stability is `.medium`. Other possible values are `.low` and `.high`. *Low* stability means that prediction accuracy should be maximized while items are allowed to be reordered more than with other values. *High* stability means that the ordering of items should remain as stable as possible so that users can better learn item locations over time. The appropriate value to use here depends on your application domain. *Medium* stability is the default value and should be used if you are insecure which one to choose.
+(Also see the three unit tests on list stability in `AccessRankTests.swift` to get an idea on how this value affects predictions.)  
+
+The parameter `maxVisits` caps the prediction list at the specified number. Use a reasonable value to control the amount of performance needed each time `visitItem` (see below) is called. 
 
 ```swift
-let accessRank = AccessRank(listStability: .medium)
+let accessRank = AccessRank(listStability: .medium, maxVisits: 1000)
 ```
 
 #### Configuration

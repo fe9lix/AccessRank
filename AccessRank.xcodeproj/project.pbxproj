@@ -191,6 +191,7 @@
 				TargetAttributes = {
 					DC3473AE194E3DBC000839EF = {
 						CreatedOnToolsVersion = 6.0;
+						DevelopmentTeam = 8B6Q2FRE35;
 						LastSwiftMigration = 0920;
 					};
 					DC3473C0194E3DBC000839EF = {
@@ -372,6 +373,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				DEVELOPMENT_TEAM = 8B6Q2FRE35;
 				INFOPLIST_FILE = AccessRank/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -388,6 +390,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				DEVELOPMENT_TEAM = 8B6Q2FRE35;
 				INFOPLIST_FILE = AccessRank/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";

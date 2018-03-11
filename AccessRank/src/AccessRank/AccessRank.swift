@@ -39,15 +39,17 @@ public final class AccessRank: Codable {
             .map { $0.id }
             .filter { $0 != mostRecentItemID }
     }
+    public var maxVisits: Int = 1000
     
     private var items = [String: ItemState]()
     private var visitNumber = 0
     private var mostRecentItemID: String
     private var predictionList = [ScoredItem]()
     
-    public init(listStability: ListStability = .medium) {
+    public init(listStability: ListStability = .medium, maxVisits: Int = 1000) {
         self.listStability = listStability
         self.mostRecentItemID = initialItem
+        self.maxVisits = maxVisits
     }
     
     // MARK: - Item updates
@@ -59,12 +61,13 @@ public final class AccessRank: Codable {
         }
         
         visitNumber += 1
+        visitNumber = min(visitNumber, maxVisits)
         
         let previousItem = mostRecentItemID
         mostRecentItemID = item
         
         var previousItemState = stateForItem(previousItem)
-        previousItemState.addVisitToItem(mostRecentItemID)
+        previousItemState.addVisitToItem(mostRecentItemID, maxVisits: maxVisits)
         items[previousItem] = previousItemState
         
         var newItemState = stateForItem(mostRecentItemID)
@@ -158,6 +161,7 @@ public final class AccessRank: Codable {
         let item = items[mostRecentItemID]!
         if mostRecentItemID != initialItem && item.numberOfVisits == 1 {
             predictionList.append(ScoredItem(id: mostRecentItemID, score: 0.0))
+            predictionList = Array(predictionList.suffix(maxVisits))
         }
     }
     
@@ -285,6 +289,7 @@ public final class AccessRank: Codable {
         case visitNumber
         case mostRecentItemID
         case predictionList
+        case maxVisits
     }
     
     public init(from decoder: Decoder) throws {
@@ -296,6 +301,7 @@ public final class AccessRank: Codable {
         visitNumber = try values.decode(Int.self, forKey: .visitNumber)
         mostRecentItemID = try values.decode(String.self, forKey: .mostRecentItemID)
         predictionList = try values.decode(Array<ScoredItem>.self, forKey: .predictionList)
+        maxVisits = try values.decode(Int.self, forKey: .maxVisits)
     }
     
     // MARK: - Structs
@@ -314,7 +320,7 @@ public final class AccessRank: Codable {
         var crfWeight = 0.0
         var rank = Int.max
         
-        mutating func addVisitToItem(_ item: String) {
+        mutating func addVisitToItem(_ item: String, maxVisits: Int) {
             let calendarComponents = Calendar.current.dateComponents([.hour, .weekday], from: Date())
             
             var nextVisitsToItem = nextVisits[item] ?? [ItemVisit]()
@@ -323,6 +329,7 @@ public final class AccessRank: Codable {
                 hour: calendarComponents.hour!,
                 weekday: calendarComponents.weekday!
             ))
+            nextVisitsToItem = Array(nextVisitsToItem.suffix(maxVisits))
             
             nextVisits[item] = nextVisitsToItem
         }
@@ -413,3 +420,4 @@ public final class AccessRank: Codable {
         }
     }
 }
+
