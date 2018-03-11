@@ -94,13 +94,17 @@ func accessRankDidUpdatePredictions(accessRank: AccessRank) {
 
 #### Persistence
 
-If you want to persist the current *AccessRank* data in your application beyond a single session, you can use the `toDictionary` method to get a snapshot of the data structure as dictionary for storage. The simplest solution is to store this dictionary in the user defaults (see the example app). You could also convert it to JSON and store it on a server, or in Core Data etc. 
-
-Once you have stored the data, you can restore *AccessRank* by setting the dictionary as second parameter in the initializer:
+AccessRank implements Swift's Codable protocol. To persist a snapshot in user defaults, you could do:
 
 ```swift
-let snapshot = accessRank.toDictionary()
-let restoredAccessRank = AccessRank(listStability: .medium, snapshot: snapshot)
+// Encode
+let encodedAccessRank = try? JSONEncoder().encode(accessRank)
+UserDefaults.standard.set(encodedAccessRank, forKey: "accessRank")
+
+// Decode
+if let jsonData = UserDefaults.standard.data(forKey: "accessRank") {
+    let decodedAccessRank = try? JSONDecoder().decode(AccessRank.self, from: jsonData)
+}
 ```
 
 ### Unit Tests
