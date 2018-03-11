@@ -1,6 +1,6 @@
 import UIKit
 
-class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AccessRankDelegate {
+final class ViewController: UIViewController, UITableViewDataSource, UITableViewDelegate, AccessRankDelegate {
     @IBOutlet var tableView : UITableView!
     @IBOutlet var predictionsTextView: UITextView!
     
@@ -56,8 +56,9 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     }
     
     private func updatePredictionList() {
-        let predictedItems = accessRank.predictions.map { TestItems.byID[$0]! }
-        predictionsTextView.text = predictedItems.joined(separator: "\n")
+        predictionsTextView.text = accessRank.predictions
+            .map { TestItems.byID[$0]! }
+            .joined(separator: "\n")
     }
     
     // MARK: - Persistence
@@ -72,6 +73,5 @@ class ViewController: UIViewController, UITableViewDataSource, UITableViewDelega
     
     private func saveToUserDefaults() {
         UserDefaults.standard.set(accessRank.toDictionary(), forKey: userDefaultsKey)
-        UserDefaults.standard.synchronize()
     }
 }

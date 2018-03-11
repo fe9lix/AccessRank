@@ -2,22 +2,18 @@ import Foundation
 
 struct TestItems {
     static let all: [[String: String]] = {
-        var items = [[String: String]]()
-        for index in 65...90 {
+        return (65...90).reduce(into: [[String: String]]()) { (items, index) in
             let letter = String(describing: UnicodeScalar(index)!)
             items.append([
                 "name": String(format: "Item %@", letter),
                 "id": letter
                 ])
         }
-        return items
     }()
     
     static let byID: [String: String] = {
-        var itemsByID = [String: String]()
-        for item in all {
+        return all.reduce(into: [String: String]()) { (itemsByID, item) in
             itemsByID[item["id"]!] = item["name"]
         }
-        return itemsByID
     }()
 }

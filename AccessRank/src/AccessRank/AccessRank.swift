@@ -17,7 +17,7 @@ public class AccessRank {
     public enum ListStability {
         case low, medium, high
     }
-
+    
     public weak var delegate: AccessRankDelegate?
     public var listStability: ListStability
     public var useTimeWeighting = true
@@ -26,26 +26,23 @@ public class AccessRank {
         return mostRecentItemID == initialItem ? nil : mostRecentItemID
     }
     public var predictions: [String] {
-        return predictionList.map { $0.id }.filter { item in
-            item != mostRecentItemID
-        }
+        return predictionList
+            .map { $0.id }
+            .filter { $0 != mostRecentItemID }
     }
     
     private var listStabilityValue: (l: Double, d: Double) {
         switch listStability {
-        case .low:
-            return (l: 1.65, d: 0.0)
-        case .medium:
-            return (l: 1.65, d: 0.2)
-        case .high:
-            return (l: 2.50, d: 0.5)
+        case .low: return (l: 1.65, d: 0.0)
+        case .medium: return (l: 1.65, d: 0.2)
+        case .high: return (l: 2.50, d: 0.5)
         }
     }
     private var items = [String: ItemState]()
     private var visitNumber = 0
     private var mostRecentItemID: String
     private var predictionList = [ScoredItem]()
-
+    
     public init(listStability: ListStability = .medium, snapshot: [String: Any]? = nil) {
         self.listStability = listStability
         self.mostRecentItemID = initialItem
@@ -62,12 +59,12 @@ public class AccessRank {
             mostRecentItemID = initialItem
             return
         }
-            
+        
         visitNumber += 1
-            
+        
         let previousItem = mostRecentItemID
         mostRecentItemID = item
-            
+        
         var previousItemState = stateForItem(previousItem)
         previousItemState.addVisitToItem(mostRecentItemID)
         items[previousItem] = previousItemState
@@ -75,7 +72,7 @@ public class AccessRank {
         var newItemState = stateForItem(mostRecentItemID)
         newItemState.updateVisits(visitNumber)
         items[mostRecentItemID] = newItemState
-                    
+        
         updatePredictionList()
     }
     
@@ -122,8 +119,8 @@ public class AccessRank {
     }
     
     private func updateScoredItems() {
-        for (index, scoredItem) in predictionList.enumerated() {
-            predictionList[index] = ScoredItem(
+        predictionList = predictionList.map { scoredItem in
+            return ScoredItem(
                 id: scoredItem.id,
                 score: scoreForItem(scoredItem.id)
             )
@@ -201,7 +198,7 @@ public class AccessRank {
     }
     
     // MARK: - Time weight
-
+    
     private func timeWeightForItem(_ item: String) -> Double {
         let rh = hourOfDayRatioForItem(item)
         let rd = dayOfWeekRatioForItem(item)
@@ -219,11 +216,9 @@ public class AccessRank {
     }
     
     private func numberOfCurrentHourItemVisits() -> Int {
-        var numVisits = 0
-        for (_, itemState) in items {
-            numVisits += itemState.numberOfVisitsToItemsInCurrentHourSlot()
+        return items.reduce(into: 0) { (total, item) in
+            total += item.value.numberOfVisitsToItemsInCurrentHourSlot()
         }
-        return numVisits
     }
     
     private func numberOfCurrentHourVisitsToItem(_ item: String) -> Int {
@@ -243,12 +238,10 @@ public class AccessRank {
         return Double(totalVisits) / 8
     }
     
-    private func numberOfVisitsToItem(_ item: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
-        var numVisits = 0
-        for (_, itemState) in items {
-            numVisits += itemState.numberOfVisitsToItem(item, inTimeSlotAtHour: hourOfDay)
+    private func numberOfVisitsToItem(_ itemId: String, inTimeSlotAtHour hourOfDay: Int) -> Int {
+        return items.reduce(into: 0) { (total, item) in
+            total += item.value.numberOfVisitsToItem(itemId, inTimeSlotAtHour: hourOfDay)
         }
-        return numVisits;
     }
     
     // MARK: - Time weight (Ratio for day of week)
@@ -261,11 +254,9 @@ public class AccessRank {
     }
     
     private func numberOfCurrentWeekdayItemVisits() -> Int {
-        var numVisits = 0
-        for (_, itemState) in items {
-            numVisits += itemState.numberOfVisitsToItemsAtCurrentWeekday()
+        return items.reduce(into: 0) { (total, item) in
+            total += item.value.numberOfVisitsToItemsAtCurrentWeekday()
         }
-        return numVisits
     }
     
     private func numberOfCurrentWeekdayVisitsToItem(_ item: String) -> Int {
@@ -275,19 +266,16 @@ public class AccessRank {
     }
     
     private func averageNumberOfWeekdayVisitsToItem(_ item: String) -> Double {
-        var totalVisits = 0
-        for weekday in 1...7 {
-            totalVisits += numberOfVisitsToItem(item, atWeekday: weekday)
+        let totalVisits = (1...7).reduce(0) { (total, weekday) in
+            return total + numberOfVisitsToItem(item, atWeekday: weekday)
         }
         return Double(totalVisits) / 7
     }
     
-    private func numberOfVisitsToItem(_ item: String, atWeekday weekday: Int) -> Int {
-        var numVisits = 0
-        for (_, itemState) in items {
-            numVisits += itemState.numberOfVisitsToItem(item, atWeekday: weekday)
+    private func numberOfVisitsToItem(_ itemId: String, atWeekday weekday: Int) -> Int {
+        return items.reduce(into: 0) { (total, item) in
+            total += item.value.numberOfVisitsToItem(itemId, atWeekday: weekday)
         }
-        return numVisits;
     }
     
     // MARK: - Persistence
@@ -505,26 +493,20 @@ public class AccessRank {
     // MARK: - Debugging
     
     public func markovDescription() -> String {
-        var str = ""
-        for (item, itemState) in items {
-            str += "\(item) > \(itemState.markovDescription())\n"
+        return items.reduce(into: "") { (str, item) in
+            str += "\(item.key) > \(item.value.markovDescription())\n"
         }
-        return str
     }
     
     public func scoreDescription() -> String {
-        var str = ""
-        for (_, scoredItem) in predictionList.enumerated() {
+        return predictionList.reduce(into: "") { (str, scoredItem) in
             str += "\(scoredItem.id): score: \(scoredItem.score), markov: \(markovWeightForItem(scoredItem.id)), crf: \(crfWeightForItem(scoredItem.id)), time: \(timeWeightForItem(scoredItem.id))\n"
         }
-        return str
     }
     
     public func predictionListDescription() -> String {
-        var str = ""
-        for scoredItem in predictionList {
+        return predictionList.reduce(into: "") { (str, scoredItem) in
             str += "\(scoredItem.id): \(scoredItem.score)\n"
         }
-        return str
     }
 }
